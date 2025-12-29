@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ContextLoggerService } from '../../common/services/context-logger.service';
 import mcpConfig from '../../config/mcp.config';
 import { HealthModule } from '../../modules/health/health.module';
+import { BuildingsModule } from '../../modules/buildings/buildings.module';
 
 import { McpServerService } from './mcp-server.service';
 
@@ -32,6 +33,7 @@ import { McpServerService } from './mcp-server.service';
   imports: [
     ConfigModule.forFeature(mcpConfig),
     HealthModule,
+    BuildingsModule,
   ],
   providers: [
     McpServerService,

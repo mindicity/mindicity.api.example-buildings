@@ -14,5 +14,6 @@ import { BuildingsService } from './buildings.service';
   imports: [DatabaseModule],
   controllers: [BuildingsController],
   providers: [BuildingsService, ContextLoggerService],
+  exports: [BuildingsService],
 })
 export class BuildingsModule {}

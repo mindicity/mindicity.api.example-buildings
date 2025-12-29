@@ -23,8 +23,8 @@ const BuildingResponseSchema = z.object({
   geom: GeoJSONPointSchema.nullable(),
   basic_data: z.record(z.string(), z.unknown()), // JSONB field as key-value pairs
   visible: z.boolean(),
-  created_at: z.date(),
-  updated_at: z.date().nullable(),
+  created_at: z.string().datetime(), // Use string datetime instead of Date for Swagger compatibility
+  updated_at: z.string().datetime().nullable(),
   updated_by: z.string().nullable(),
 });
 

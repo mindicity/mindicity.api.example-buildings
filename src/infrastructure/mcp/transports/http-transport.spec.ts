@@ -1,6 +1,7 @@
 import { Server as HttpServer } from 'http';
 
 import { HealthService } from '../../../modules/health/health.service';
+import { BuildingsService } from '../../../modules/buildings/buildings.service';
 
 import { TransportConfig } from './base-transport';
 import { HttpTransport } from './http-transport';
@@ -16,6 +17,7 @@ describe('HttpTransport', () => {
   let mockServer: jest.Mocked<HttpServer>;
   let mockMcpServer: any;
   let mockHealthService: jest.Mocked<HealthService>;
+  let mockBuildingsService: jest.Mocked<BuildingsService>;
   let config: TransportConfig;
 
   beforeEach(() => {
@@ -49,6 +51,14 @@ describe('HttpTransport', () => {
       }),
     } as any;
 
+    mockBuildingsService = {
+      findAll: jest.fn(),
+      findByPolygon: jest.fn(),
+      countTotal: jest.fn(),
+      countTotalByPolygon: jest.fn(),
+      calculatePaginationMeta: jest.fn(),
+    } as any;
+
     const mockAppConfig = {
       apiPrefix: '/mcapi',
       apiScopePrefix: '/project',
@@ -58,6 +68,7 @@ describe('HttpTransport', () => {
 
     const dependencies = createTransportDependencies({
       healthService: mockHealthService,
+      buildingsService: mockBuildingsService,
       appConfig: mockAppConfig,
     });
 

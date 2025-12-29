@@ -6,6 +6,7 @@ import { SqlQueryBuilder } from '../../common/utils/sql-query-builder.util';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 
 import { BuildingData, BuildingQuery, GeospatialQuery, PaginationMeta } from './interfaces';
+import { DatabaseErrorHandler } from './exceptions/database-error.handler';
 
 /**
  * BuildingsService provides building data retrieval functionality with automatic correlation logging.
@@ -110,18 +111,15 @@ export class BuildingsService {
         updated_by: row.updated_by as string | null,
       }));
 
-      this.logger.debug('buildings retrieved', {
-        count: buildings.length,
-        correlationId: ContextUtil.getCorrelationId()
-      });
-
       return buildings;
     } catch (error) {
       this.logger.error('failed to retrieve buildings', {
         err: error,
         correlationId: ContextUtil.getCorrelationId()
       });
-      throw error;
+      
+      // Use database error handler to convert error to appropriate exception
+      throw DatabaseErrorHandler.handleDatabaseError(error, 'buildings.findAll');
     }
   }
 
@@ -218,18 +216,15 @@ export class BuildingsService {
         updated_by: row.updated_by as string | null,
       }));
 
-      this.logger.debug('buildings retrieved by polygon intersection', {
-        count: buildings.length,
-        correlationId: ContextUtil.getCorrelationId()
-      });
-
       return buildings;
     } catch (error) {
       this.logger.error('failed to retrieve buildings by polygon', {
         err: error,
         correlationId: ContextUtil.getCorrelationId()
       });
-      throw error;
+      
+      // Use database error handler to convert error to appropriate exception
+      throw DatabaseErrorHandler.handleDatabaseError(error, 'buildings.findByPolygon');
     }
   }
 
@@ -278,18 +273,15 @@ export class BuildingsService {
       const result = await this.databaseService.queryOne<{ total: string }>(sql, params);
       const total = parseInt(result?.total ?? '0', 10);
 
-      this.logger.debug('buildings count retrieved', {
-        total,
-        correlationId: ContextUtil.getCorrelationId()
-      });
-
       return total;
     } catch (error) {
       this.logger.error('failed to count buildings', {
         err: error,
         correlationId: ContextUtil.getCorrelationId()
       });
-      throw error;
+      
+      // Use database error handler to convert error to appropriate exception
+      throw DatabaseErrorHandler.handleDatabaseError(error, 'buildings.countTotal');
     }
   }
 
@@ -344,18 +336,15 @@ export class BuildingsService {
       const result = await this.databaseService.queryOne<{ total: string }>(sql, params);
       const total = parseInt(result?.total ?? '0', 10);
 
-      this.logger.debug('buildings count by polygon retrieved', {
-        total,
-        correlationId: ContextUtil.getCorrelationId()
-      });
-
       return total;
     } catch (error) {
       this.logger.error('failed to count buildings by polygon', {
         err: error,
         correlationId: ContextUtil.getCorrelationId()
       });
-      throw error;
+      
+      // Use database error handler to convert error to appropriate exception
+      throw DatabaseErrorHandler.handleDatabaseError(error, 'buildings.countTotalByPolygon');
     }
   }
 

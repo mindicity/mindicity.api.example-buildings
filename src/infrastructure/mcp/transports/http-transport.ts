@@ -3,6 +3,7 @@ import { createServer, Server as HttpServer } from 'http';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
 import { HealthMcpHttpTool } from '../../../modules/health/mcp';
+import { BuildingsMcpHttpTool } from '../../../modules/buildings/mcp';
 
 import { McpTransport, TransportConfig } from './base-transport';
 import { OptionalTransportDependencies } from './transport-dependencies';
@@ -15,6 +16,7 @@ export class HttpTransport implements McpTransport {
   private httpServer: HttpServer | null = null;
   private mcpServer: Server | null = null;
   private healthMcpTool: HealthMcpHttpTool;
+  private buildingsMcpTool: BuildingsMcpHttpTool;
 
   constructor(
     private readonly config: TransportConfig,
@@ -24,9 +26,13 @@ export class HttpTransport implements McpTransport {
     if (!dependencies.healthService) {
       throw new Error('HttpTransport requires HealthService in dependencies');
     }
+    if (!dependencies.buildingsService) {
+      throw new Error('HttpTransport requires BuildingsService in dependencies');
+    }
 
     // Initialize MCP tools
     this.healthMcpTool = new HealthMcpHttpTool(dependencies.healthService);
+    this.buildingsMcpTool = new BuildingsMcpHttpTool(dependencies.buildingsService);
   }
 
   /**
@@ -245,7 +251,7 @@ export class HttpTransport implements McpTransport {
           this.handleToolsList(req, transport);
           break;
         case 'tools/call':
-          this.handleToolsCall(req, transport);
+          await this.handleToolsCall(req, transport);
           break;
         case 'resources/list':
           this.handleResourcesList(req, transport);
@@ -285,37 +291,49 @@ export class HttpTransport implements McpTransport {
 
   /**
    * Handle tools/list request.
+   * Returns all available tools from all modules.
    * @private
    */
   private handleToolsList(req: { id?: unknown }, transport: { send: (response: unknown) => void }): void {
+    const tools = [
+      ...HealthMcpHttpTool.getToolDefinitions(),
+      ...BuildingsMcpHttpTool.getToolDefinitions(),
+    ];
+
     transport.send({
       jsonrpc: '2.0',
       id: req.id,
       result: {
-        tools: HealthMcpHttpTool.getToolDefinitions(),
+        tools,
       },
     });
   }
 
   /**
    * Handle tools/call request.
+   * Routes tool calls to appropriate modules.
    * @private
    */
-  private handleToolsCall(req: { id?: unknown; params?: unknown }, transport: { send: (response: unknown) => void }): void {
+  private async handleToolsCall(req: { id?: unknown; params?: unknown }, transport: { send: (response: unknown) => void }): Promise<void> {
     const params = req.params as { name?: string; arguments?: unknown };
     const toolName = params?.name;
     const toolArgs = (params?.arguments as Record<string, unknown>) ?? {};
     
     try {
-      if (toolName === 'get_api_health') {
-        const result = this.healthMcpTool.getApiHealth(toolArgs);
+      let result;
 
-        transport.send({
-          jsonrpc: '2.0',
-          id: req.id,
-          result,
-        });
-      } else {
+      // Health module tools
+      if (toolName === 'get_api_health') {
+        result = this.healthMcpTool.getApiHealth(toolArgs);
+      }
+      // Buildings module tools
+      else if (toolName === 'get_buildings_list') {
+        result = await this.buildingsMcpTool.get_buildings_list(toolArgs);
+      }
+      else if (toolName === 'search_buildings_geospatial') {
+        result = await this.buildingsMcpTool.search_buildings_geospatial(toolArgs);
+      }
+      else {
         transport.send({
           jsonrpc: '2.0',
           id: req.id,
@@ -324,7 +342,14 @@ export class HttpTransport implements McpTransport {
             message: `Unknown tool: ${toolName}`,
           },
         });
+        return;
       }
+
+      transport.send({
+        jsonrpc: '2.0',
+        id: req.id,
+        result,
+      });
     } catch (error) {
       transport.send({
         jsonrpc: '2.0',
@@ -340,6 +365,7 @@ export class HttpTransport implements McpTransport {
 
   /**
    * Handle resources/list request.
+   * Returns all available resources from all modules.
    * @private
    */
   private handleResourcesList(req: { id?: unknown }, transport: { send: (response: unknown) => void }): void {
@@ -361,6 +387,7 @@ export class HttpTransport implements McpTransport {
 
   /**
    * Handle resources/read request.
+   * Returns resource content based on URI.
    * @private
    */
   private async handleResourcesRead(req: { id?: unknown; params?: unknown }, transport: { send: (response: unknown) => void }): Promise<void> {

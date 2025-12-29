@@ -14,6 +14,8 @@ import { ContextLoggerService } from '../../common/services/context-logger.servi
 import { McpConfig } from '../../config/mcp.config';
 import { HealthService } from '../../modules/health/health.service';
 import { HealthMcpHttpTool, HealthMcpResources } from '../../modules/health/mcp';
+import { BuildingsService } from '../../modules/buildings/buildings.service';
+import { BuildingsMcpHttpTool } from '../../modules/buildings/mcp';
 
 import { McpTransport } from './transports/base-transport';
 import { createTransportDependencies } from './transports/transport-dependencies';
@@ -76,6 +78,7 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
   private transport: McpTransport | null = null;
   private readonly mcpConfig: McpConfig;
   private healthMcpHttpTool: HealthMcpHttpTool;
+  private buildingsMcpHttpTool: BuildingsMcpHttpTool;
   // Future MCP tools can be added here:
   // private userMcpHttpTool: UserMcpHttpTool;
   // private notificationMcpHttpTool: NotificationMcpHttpTool;
@@ -83,6 +86,7 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly configService: ConfigService,
     private readonly healthService: HealthService,
+    private readonly buildingsService: BuildingsService,
     loggerService: ContextLoggerService,
   ) {
     this.logger = loggerService.child({ serviceContext: McpServerService.name });
@@ -91,6 +95,7 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
     
     // Initialize MCP tools
     this.healthMcpHttpTool = new HealthMcpHttpTool(this.healthService);
+    this.buildingsMcpHttpTool = new BuildingsMcpHttpTool(this.buildingsService);
     
     // Future MCP tools initialization:
     // this.userMcpHttpTool = new UserMcpHttpTool(this.userService);
@@ -152,6 +157,7 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
     const appConfig = this.configService.get('app');
     const dependencies = createTransportDependencies({
       healthService: this.healthService,
+      buildingsService: this.buildingsService,
       appConfig,
       // Future services can be added here without breaking existing code:
       // userService: this.userService,
@@ -227,12 +233,12 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
     });
 
     // Handle tool calls - dynamically route to appropriate endpoints
-    this.server.setRequestHandler(CallToolRequestSchema, (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
       
       this.logger.trace('MCP tool called', { toolName: name, arguments: args });
 
-      return this.handleDynamicToolCall(name, args);
+      return await this.handleDynamicToolCall(name, args);
     });
 
     // List available resources - API documentation and specs
@@ -274,6 +280,9 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
     // Get tool definitions from health module (HTTP transport only)
     tools.push(...HealthMcpHttpTool.getToolDefinitions());
 
+    // Get tool definitions from buildings module (HTTP transport only)
+    tools.push(...BuildingsMcpHttpTool.getToolDefinitions());
+
     // Future modules can be added here:
     // tools.push(...UserMcpTool.getToolDefinitions());
     // tools.push(...NotificationMcpTool.getToolDefinitions());
@@ -287,10 +296,19 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
    * Routes tool calls to the correct module based on tool name patterns.
    * @private
    */
-  private handleDynamicToolCall(toolName: string, args: unknown): CallToolResult {
+  private async handleDynamicToolCall(toolName: string, args: unknown): Promise<CallToolResult> {
     // Health module tools
     if (toolName.startsWith('get_api_health')) {
       return this.healthMcpHttpTool.getApiHealth(args as Record<string, unknown>);
+    }
+    
+    // Buildings module tools
+    if (toolName === 'get_buildings_list') {
+      return await this.buildingsMcpHttpTool.get_buildings_list(args as Record<string, unknown>);
+    }
+    
+    if (toolName === 'search_buildings_geospatial') {
+      return await this.buildingsMcpHttpTool.search_buildings_geospatial(args as Record<string, unknown>);
     }
     
     // Future module tools can be added here:
