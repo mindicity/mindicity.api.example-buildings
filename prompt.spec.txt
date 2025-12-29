@@ -1,0 +1,19 @@
+I need a new Mindicity API project called data-enrich with an API module buildings. 
+The module should have a GET endpoint /buildings that retrieves data from a PostGIS table public.buildings like this:
+CREATE TABLE public.buildings (
+    id VARCHAR NOT NULL,
+    cadastral_code TEXT NOT NULL,
+    municipality_code TEXT NOT NULL,
+    name TEXT NULL,
+    building_type TEXT NOT NULL,
+    address TEXT NOT NULL,
+    geom public.geometry(POINT, 4326) NULL,
+    basic_data JSONB DEFAULT '{}'::jsonb NOT NULL,
+    visible BOOLEAN DEFAULT true NULL,
+    created_at TIMESTAMP DEFAULT now() NOT NULL,
+    updated_at TIMESTAMP DEFAULT now() NULL,
+    updated_by TEXT NULL
+);
+
+The endpoint must support pagination and filtering on all text columns via query parameters, and a geospatial filter polygon in WKT format passed in querystring that returns buildings inside the polygon.
+Also create at least two MCP tools: one for basic search and one for geospatial search.
