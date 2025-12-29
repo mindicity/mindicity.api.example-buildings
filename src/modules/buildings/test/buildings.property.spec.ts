@@ -202,4 +202,125 @@ describe('Buildings API Property Tests', () => {
       { numRuns: 100 }
     );
   });
+
+  /**
+   * Property 3: Pagination Behavior
+   * 
+   * For any valid pagination parameters (limit, offset), the API should return exactly 
+   * the specified number of results (up to the limit), skip the correct number of records 
+   * (offset), and include accurate pagination metadata.
+   * 
+   * Validates: Requirements 2.2, 2.3, 2.4
+   */
+  it('Property 3: Pagination Behavior', async () => {
+    // Mock database response with known dataset size
+    const totalRecords = 50;
+    const mockBuildingData = Array.from({ length: totalRecords }, (_, index) => ({
+      id: `building-${index + 1}`,
+      cadastral_code: `CAD${String(index + 1).padStart(3, '0')}`,
+      municipality_code: `MUN${String(index + 1).padStart(3, '0')}`,
+      name: `Building ${index + 1}`,
+      building_type: index % 2 === 0 ? 'residential' : 'commercial',
+      address: `${index + 1} Test Street`,
+      geom: '{"type":"Point","coordinates":[12.4924,41.8902]}',
+      basic_data: { floor: Math.floor(index / 10) + 1 },
+      visible: true,
+      created_at: new Date(2023, 0, index + 1).toISOString(),
+      updated_at: new Date(2023, 0, index + 2).toISOString(),
+      updated_by: 'system',
+    }));
+
+    await fc.assert(
+      fc.asyncProperty(
+        fc.record({
+          limit: fc.option(fc.integer({ min: 1, max: 100 }), { nil: undefined }),
+          offset: fc.option(fc.integer({ min: 0, max: 200 }), { nil: undefined }),
+          name: fc.option(fc.string({ minLength: 1, maxLength: 50 }), { nil: undefined }),
+        }),
+        async (query: BuildingQuery) => {
+          const expectedLimit = query.limit ?? 20;
+          const expectedOffset = query.offset ?? 0;
+
+          // Mock database responses based on pagination parameters
+          const startIndex = Math.min(expectedOffset, totalRecords);
+          const endIndex = Math.min(startIndex + expectedLimit, totalRecords);
+          const expectedResults = mockBuildingData.slice(startIndex, endIndex);
+
+          // Mock findAll to return paginated results
+          mockDatabaseService.queryMany.mockResolvedValueOnce(expectedResults);
+
+          // Mock countTotal to return total count
+          mockDatabaseService.queryOne.mockResolvedValueOnce({ total: totalRecords.toString() });
+
+          const results = await service.findAll(query);
+          const totalCount = await service.countTotal(query);
+          const paginationMeta = service.calculatePaginationMeta(query, totalCount);
+
+          // Verify result count matches expected pagination
+          if (expectedOffset >= totalRecords) {
+            // When offset exceeds total records, should return empty results
+            expect(results).toHaveLength(0);
+          } else {
+            // Should return exactly the expected number of results
+            const expectedResultCount = Math.min(expectedLimit, totalRecords - expectedOffset);
+            expect(results).toHaveLength(expectedResultCount);
+          }
+
+          // Verify pagination metadata accuracy
+          expect(paginationMeta.total).toBe(totalRecords);
+          expect(paginationMeta.limit).toBe(expectedLimit);
+          
+          // Verify offset handling (should not exceed total - 1)
+          const effectiveOffset = Math.min(expectedOffset, Math.max(0, totalRecords - 1));
+          expect(paginationMeta.offset).toBe(effectiveOffset);
+
+          // Verify navigation flags
+          const expectedHasNext = effectiveOffset + expectedLimit < totalRecords;
+          const expectedHasPrevious = effectiveOffset > 0;
+          expect(paginationMeta.hasNext).toBe(expectedHasNext);
+          expect(paginationMeta.hasPrevious).toBe(expectedHasPrevious);
+
+          // Verify database service was called with correct pagination parameters
+          expect(mockDatabaseService.queryMany).toHaveBeenCalled();
+          const [sql, params] = mockDatabaseService.queryMany.mock.calls[mockDatabaseService.queryMany.mock.calls.length - 1];
+          
+          // Verify SQL includes LIMIT and OFFSET with correct values
+          expect(sql).toContain('LIMIT');
+          expect(sql).toContain('OFFSET');
+          expect(sql).toContain(`LIMIT ${expectedLimit}`);
+          expect(sql).toContain(`OFFSET ${expectedOffset}`);
+          
+          // Verify parameters structure (should contain visibility filter and any text filters)
+          if (params) {
+            expect(Array.isArray(params)).toBe(true);
+            expect(params.length).toBeGreaterThanOrEqual(1); // At least visibility parameter
+            expect(params[0]).toBe(true); // First parameter should be visibility = true
+          }
+
+          // Edge case: When offset exceeds total records
+          if (expectedOffset >= totalRecords) {
+            // Pagination metadata should handle this gracefully
+            expect(paginationMeta.offset).toBeLessThan(totalRecords);
+            expect(paginationMeta.hasNext).toBe(false);
+          }
+
+          // Edge case: When limit is larger than remaining records
+          if (expectedOffset + expectedLimit > totalRecords) {
+            const remainingRecords = Math.max(0, totalRecords - expectedOffset);
+            expect(results.length).toBeLessThanOrEqual(remainingRecords);
+            expect(paginationMeta.hasNext).toBe(false);
+          }
+
+          // Verify all results have proper structure (basic validation)
+          results.forEach(building => {
+            expect(typeof building.id).toBe('string');
+            expect(building.id).toBeTruthy();
+            expect(typeof building.visible).toBe('boolean');
+            expect(building.visible).toBe(true); // Should always be true due to visibility filter
+          });
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
 });

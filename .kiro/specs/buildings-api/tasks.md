@@ -54,8 +54,8 @@ This implementation plan follows the Mindicity API bootstrap process and archite
     - **Property 6: Geospatial Intersection**
     - **Validates: Requirements 4.2**
 
-- [ ] 5. Implement text-based filtering functionality
-  - [ ] 5.1 Add text filtering logic to BuildingsService
+- [x] 5. Implement text-based filtering functionality
+  - [x] 5.1 Add text filtering logic to BuildingsService
     - Implement name and address partial matching (ILIKE)
     - Add exact matching for cadastral_code, municipality_code, building_type
     - Support multiple filter combination with AND logic
@@ -69,16 +69,17 @@ This implementation plan follows the Mindicity API bootstrap process and archite
     - **Property 5: Multiple Filter Combination**
     - **Validates: Requirements 3.7**
 
-- [ ] 6. Implement pagination functionality
-  - [ ] 6.1 Add pagination logic to BuildingsService
+- [x] 6. Implement pagination functionality
+  - [x] 6.1 Add pagination logic to BuildingsService
     - Implement limit and offset handling in queries
     - Create pagination metadata calculation
     - Handle edge cases (offset exceeding total records)
     - _Requirements: 2.2, 2.3, 2.4, 2.5_
 
-  - [ ]* 6.2 Write property test for pagination behavior
+  - [x]* 6.2 Write property test for pagination behavior
     - **Property 3: Pagination Behavior**
     - **Validates: Requirements 2.2, 2.3, 2.4**
+    - **Status: PASSED** - Property test validates pagination behavior correctly
 
   - [ ]* 6.3 Write property test for empty result handling
     - **Property 9: Empty Result Handling**

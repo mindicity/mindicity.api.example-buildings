@@ -5,7 +5,7 @@ import { ContextUtil } from '../../common/utils/context.util';
 import { SqlQueryBuilder } from '../../common/utils/sql-query-builder.util';
 import { DatabaseService } from '../../infrastructure/database/database.service';
 
-import { BuildingData, BuildingQuery, GeospatialQuery } from './interfaces';
+import { BuildingData, BuildingQuery, GeospatialQuery, PaginationMeta } from './interfaces';
 
 /**
  * BuildingsService provides building data retrieval functionality with automatic correlation logging.
@@ -81,11 +81,14 @@ export class BuildingsService {
         paramIndex++;
       }
 
-      // Add pagination
+      // Add pagination with edge case handling
+      const limit = query.limit ?? 20;
+      const offset = query.offset ?? 0;
+      
       queryBuilder = queryBuilder
         .orderBy('created_at', 'DESC')
-        .limit(query.limit ?? 20)
-        .offset(query.offset ?? 0);
+        .limit(limit)
+        .offset(offset);
 
       const { query: sql, params } = queryBuilder.build();
 
@@ -354,5 +357,42 @@ export class BuildingsService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Calculate pagination metadata based on query parameters and total count.
+   * Handles edge cases like offset exceeding total records.
+   * @param query - Query parameters containing limit and offset
+   * @param total - Total number of records matching the query criteria
+   * @returns Pagination metadata with navigation information
+   */
+  calculatePaginationMeta(query: { limit?: number; offset?: number }, total: number): PaginationMeta {
+    const limit = query.limit ?? 20;
+    const offset = query.offset ?? 0;
+
+    // Handle edge case: offset exceeding total records
+    const effectiveOffset = Math.min(offset, Math.max(0, total - 1));
+    
+    // Calculate pagination flags
+    const hasNext = effectiveOffset + limit < total;
+    const hasPrevious = effectiveOffset > 0;
+
+    this.logger.trace('pagination metadata calculated', {
+      total,
+      limit,
+      offset,
+      effectiveOffset,
+      hasNext,
+      hasPrevious,
+      correlationId: ContextUtil.getCorrelationId()
+    });
+
+    return {
+      total,
+      limit,
+      offset: effectiveOffset,
+      hasNext,
+      hasPrevious,
+    };
   }
 }
