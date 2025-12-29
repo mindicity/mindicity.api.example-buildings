@@ -14,8 +14,8 @@ import logConfig from './config/log.config';
 import mcpConfig from './config/mcp.config';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { McpModule } from './infrastructure/mcp/mcp.module';
-import { HealthModule } from './modules/health/health.module';
 import { BuildingsModule } from './modules/buildings/buildings.module';
+import { HealthModule } from './modules/health/health.module';
 
 /**
  * Main application module with configurable logging system.
@@ -87,8 +87,8 @@ import { BuildingsModule } from './modules/buildings/buildings.module';
     }),
     DatabaseModule,
     McpModule,
-    HealthModule,
     BuildingsModule,
+    HealthModule,
   ],
   providers: [HttpLoggingInterceptor, ContextLoggerService],
 })

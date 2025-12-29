@@ -56,10 +56,10 @@ describe('Routes Configuration', () => {
       jest.isolateModules(() => {
         const { ROUTES: freshRoutes } = require('./routes.config');
 
-        // Since .env file has APP_API_SCOPE_PREFIX=/project, it will be loaded
-        expect(freshRoutes.HEALTH).toBe('health/project');
-        expect(freshRoutes.BUILDINGS).toBe('project/buildings');
-        expect(freshRoutes.DOCS).toBe('docs/project/swagger/ui');
+        // Since .env file has APP_API_SCOPE_PREFIX=/data-enrich, it will be loaded
+        expect(freshRoutes.HEALTH).toBe('health/data-enrich');
+        expect(freshRoutes.BUILDINGS).toBe('data-enrich/buildings');
+        expect(freshRoutes.DOCS).toBe('docs/data-enrich/swagger/ui');
       });
     });
 

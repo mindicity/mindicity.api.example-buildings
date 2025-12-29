@@ -12,35 +12,35 @@ This implementation plan follows the Mindicity API bootstrap process and archite
   - Verify build, lint, and test commands pass
   - _Requirements: Project Setup_
 
-- [ ] 2. Implement core buildings module structure
-  - [ ] 2.1 Create buildings module files and directories
+- [x] 2. Implement core buildings module structure
+  - [x] 2.1 Create buildings module files and directories
     - Generate NestJS module, controller, and service using CLI
     - Create dto/, interfaces/, mcp/, and test/ directories
     - Set up module imports and dependencies
     - _Requirements: 1.1, 8.1_
 
-  - [ ]* 2.2 Write property test for module structure
+  - [x]* 2.2 Write property test for module structure
     - **Property 1: Complete Response Structure**
     - **Validates: Requirements 1.3, 1.5, 8.4**
 
 - [ ] 3. Implement data models and validation
-  - [ ] 3.1 Create internal interfaces for building data
+  - [x] 3.1 Create internal interfaces for building data
     - Define BuildingData, BuildingQuery, GeospatialQuery interfaces
     - Create PaginationMeta and PaginationOptions interfaces
     - _Requirements: 1.3, 2.1, 4.1_
 
-  - [ ] 3.2 Create Zod DTO schemas
+  - [x] 3.2 Create Zod DTO schemas
     - Implement QueryBuildingsDto with text filtering validation
     - Create GeospatialQueryDto with WKT polygon validation
     - Define BuildingResponseDto and PaginationMetaDto
     - _Requirements: 3.1, 4.3, 7.4, 7.5_
 
-  - [ ]* 3.3 Write property test for input validation
+  - [x]* 3.3 Write property test for input validation
     - **Property 8: Input Validation Error Handling**
     - **Validates: Requirements 4.4, 7.1, 7.4, 7.5**
 
 - [ ] 4. Implement database service integration
-  - [ ] 4.1 Create database query methods in BuildingsService
+  - [x] 4.1 Create database query methods in BuildingsService
     - Implement findAll() method using SqlQueryBuilder for standard queries
     - Create findByPolygon() method using raw SQL for PostGIS operations
     - Add countTotal() method for pagination metadata

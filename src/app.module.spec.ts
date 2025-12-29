@@ -10,8 +10,8 @@ import { createPinoTransportsWithRotation } from './common/utils/pino-roll-trans
 import appConfig from './config/app.config';
 import logConfig from './config/log.config';
 import { DatabaseModule } from './infrastructure/database/database.module';
-import { HealthModule } from './modules/health/health.module';
 import { BuildingsModule } from './modules/buildings/buildings.module';
+import { HealthModule } from './modules/health/health.module';
 
 describe('AppModule', () => {
   let module: TestingModule;
