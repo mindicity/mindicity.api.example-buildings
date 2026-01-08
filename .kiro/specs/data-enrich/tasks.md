@@ -7,7 +7,7 @@ This implementation plan creates a NestJS-based API for building data retrieval 
 ## Tasks
 
 - [x] 1. Bootstrap Mindicity API project ✅ **COMPLETED**
-  - ✅ Clone official template repository from https://github.com/mindicity/mindicity.ecosystem.sdk.template-api.git
+  - ✅ Clone official template repository from <https://github.com/mindicity/mindicity.ecosystem.sdk.template-api.git>
   - ✅ Execute complete bootstrap process to rename template → data-enrich API
   - ✅ Rename template module to buildings module
   - ✅ Configure environment and verify build/test success (593 tests passed, 95.04% coverage)

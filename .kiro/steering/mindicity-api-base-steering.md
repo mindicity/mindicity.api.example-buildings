@@ -470,6 +470,36 @@ export interface {Entity}PaginatedResponse {
 }
 ```
 
+### CRITICAL: ValidationPipe Configuration for nestjs-zod
+
+**MANDATORY**: When using nestjs-zod DTOs, you MUST use `ZodValidationPipe` instead of the standard NestJS `ValidationPipe`.
+
+**❌ WRONG: Standard ValidationPipe (causes validation errors)**:
+```typescript
+// This will cause "property should not exist" errors with Zod DTOs
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }),
+);
+```
+
+**✅ CORRECT: ZodValidationPipe for nestjs-zod compatibility**:
+```typescript
+import { ZodValidationPipe } from 'nestjs-zod';
+
+// Use ZodValidationPipe for proper Zod schema validation
+app.useGlobalPipes(new ZodValidationPipe());
+```
+
+**AI Assistant Rules**:
+- **NEVER use standard ValidationPipe** with nestjs-zod DTOs
+- **ALWAYS import and use ZodValidationPipe** from 'nestjs-zod'
+- **VERIFY ValidationPipe configuration** when debugging validation errors
+- **COMMON ERROR**: "property should not exist" indicates wrong ValidationPipe usage
+
 ## Database Query Rules
 
 ### SqlQueryBuilder (MANDATORY for Simple Queries)
