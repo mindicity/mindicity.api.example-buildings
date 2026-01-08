@@ -67,29 +67,29 @@ export class BuildingsService {
 
       // Add text filters
       if (query.cadastral_code) {
-        queryBuilder = queryBuilder.where('cadastral_code = $1', [query.cadastral_code]);
+        queryBuilder = queryBuilder.andWhere('cadastral_code = $1', [query.cadastral_code]);
       }
 
       if (query.municipality_code) {
-        queryBuilder = queryBuilder.where('municipality_code = $1', [query.municipality_code]);
+        queryBuilder = queryBuilder.andWhere('municipality_code = $1', [query.municipality_code]);
       }
 
       if (query.building_type) {
-        queryBuilder = queryBuilder.where('building_type = $1', [query.building_type]);
+        queryBuilder = queryBuilder.andWhere('building_type = $1', [query.building_type]);
       }
 
       if (query.name) {
-        queryBuilder = queryBuilder.where('name ILIKE $1', [`%${query.name}%`]);
+        queryBuilder = queryBuilder.andWhere('name ILIKE $1', [`%${query.name}%`]);
       }
 
       if (query.address) {
-        queryBuilder = queryBuilder.where('address ILIKE $1', [`%${query.address}%`]);
+        queryBuilder = queryBuilder.andWhere('address ILIKE $1', [`%${query.address}%`]);
       }
 
       // Add spatial filter if polygon is provided
       if (query.polygon) {
         // Use ST_Intersects with ST_GeomFromText for spatial intersection in EPSG:4326
-        queryBuilder = queryBuilder.where(
+        queryBuilder = queryBuilder.andWhere(
           'ST_Intersects(geom, ST_GeomFromText($1, 4326))',
           [query.polygon]
         );

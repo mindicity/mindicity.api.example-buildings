@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { ContextLoggerService } from '../../../common/services/context-logger.service';
 import { HealthService } from '../../../modules/health/health.service';
+import { BuildingsService } from '../../../modules/buildings/buildings.service';
 
 /**
  * App configuration interface for MCP transports.
@@ -52,6 +53,12 @@ export interface TransportDependencies {
    * Required by HTTP and SSE transports for get_api_health tool.
    */
   healthService: HealthService;
+
+  /**
+   * Buildings service for building data retrieval and spatial queries.
+   * Required by HTTP transport for search_buildings_basic and search_buildings_spatial tools.
+   */
+  buildingsService: BuildingsService;
 
   /**
    * Context logger service for structured logging with correlation IDs.
@@ -150,6 +157,10 @@ export function createTransportDependencies(
     throw new Error('HealthService is required for MCP transports');
   }
 
+  if (!services.buildingsService) {
+    throw new Error('BuildingsService is required for MCP transports');
+  }
+
   if (!services.loggerService) {
     throw new Error('ContextLoggerService is required for MCP transports');
   }
@@ -180,6 +191,9 @@ export function validateTransportDependencies(
   if (transportType === 'http') {
     if (!dependencies?.healthService) {
       throw new Error(`${transportType.toUpperCase()} transport requires HealthService in dependencies`);
+    }
+    if (!dependencies?.buildingsService) {
+      throw new Error(`${transportType.toUpperCase()} transport requires BuildingsService in dependencies`);
     }
     if (!dependencies?.loggerService) {
       throw new Error(`${transportType.toUpperCase()} transport requires ContextLoggerService in dependencies`);

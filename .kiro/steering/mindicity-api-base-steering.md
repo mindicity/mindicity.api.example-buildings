@@ -682,20 +682,54 @@ export class {ModuleName}McpHttpTool {
   }
 
   // Tool method implementation - MANDATORY: Start with trace logging
-  {toolMethod}(args: Record<string, unknown>): CallToolResult {
+  async {toolMethod}(args: Record<string, unknown>): Promise<CallToolResult> {
     this.logger.trace('{toolMethod}()', { args });
     
-    const data = this.{moduleName}Service.{serviceMethod}();
-    return {
-      content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-    };
+    try {
+      // CRITICAL: Always validate input parameters first
+      if (args.requiredParam && typeof args.requiredParam !== 'string') {
+        throw new Error('requiredParam is required and must be a string');
+      }
+
+      // Build query/parameters from validated arguments
+      const query = {};
+      if (args.param1 && typeof args.param1 === 'string') {
+        query.param1 = args.param1;
+      }
+
+      // CRITICAL: Always await service calls for async operations
+      const data = await this.{moduleName}Service.{serviceMethod}(query);
+      
+      return {
+        content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+      };
+    } catch (error) {
+      // CRITICAL: Always handle errors gracefully with structured responses
+      this.logger.error('Error in {toolMethod}', { err: error, args });
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              error: 'Failed to execute {toolMethod}',
+              message: error instanceof Error ? error.message : 'Unknown error',
+            }, null, 2),
+          },
+        ],
+      };
+    }
   }
 
   // Comprehensive tool definitions with detailed descriptions
   static getToolDefinitions(): Array<{
     name: string;
     description: string;
-    inputSchema: object;
+    inputSchema: {
+      type: string;
+      properties: Record<string, unknown>;
+      required: string[];
+    };
     usage?: {
       purpose: string;
       when_to_use: string[];
@@ -719,8 +753,17 @@ Detailed explanation including:
 - Integration with other API operations`,
         inputSchema: {
           type: 'object',
-          properties: { /* parameter definitions */ },
-          required: [],
+          properties: {
+            param1: {
+              type: 'string',
+              description: 'Description of parameter 1',
+            },
+            param2: {
+              type: 'string',
+              description: 'Description of parameter 2',
+            },
+          },
+          required: [], // or ['param1'] if required
         },
         usage: {
           purpose: 'Clear statement of tool purpose and transport type',
@@ -758,6 +801,168 @@ Detailed explanation including:
 - [ ] Create MCP E2E tests for all tools
 
 **❌ FORBIDDEN:** Implementing business logic directly in MCP tools (must delegate to services)
+
+### CRITICAL: Common MCP Implementation Errors & Solutions
+
+**AI Assistant MUST avoid these common errors that cause runtime failures:**
+
+#### Error 1: Missing Async/Await in Tool Methods
+```typescript
+// ❌ WRONG: Missing async/await causes Promise<CallToolResult> instead of CallToolResult
+searchBuildings(args: Record<string, unknown>): CallToolResult {
+  const buildings = this.buildingsService.findAll(query); // Returns Promise!
+  return { content: [{ type: 'text', text: JSON.stringify(buildings, null, 2) }] };
+}
+
+// ✅ CORRECT: Proper async/await handling
+async searchBuildings(args: Record<string, unknown>): Promise<CallToolResult> {
+  const buildings = await this.buildingsService.findAll(query);
+  return { content: [{ type: 'text', text: JSON.stringify(buildings, null, 2) }] };
+}
+```
+
+#### Error 2: Missing Error Handling in Tool Methods
+```typescript
+// ❌ WRONG: No error handling causes unhandled promise rejections
+async searchBuildings(args: Record<string, unknown>): Promise<CallToolResult> {
+  const buildings = await this.buildingsService.findAll(query); // Can throw!
+  return { content: [{ type: 'text', text: JSON.stringify(buildings, null, 2) }] };
+}
+
+// ✅ CORRECT: Comprehensive error handling
+async searchBuildings(args: Record<string, unknown>): Promise<CallToolResult> {
+  try {
+    const buildings = await this.buildingsService.findAll(query);
+    return { content: [{ type: 'text', text: JSON.stringify(buildings, null, 2) }] };
+  } catch (error) {
+    this.logger.error('Error in searchBuildings', { err: error, args });
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          error: 'Failed to search buildings',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        }, null, 2),
+      }],
+    };
+  }
+}
+```
+
+#### Error 3: Missing Input Validation
+```typescript
+// ❌ WRONG: No input validation causes runtime errors
+async searchBuildingsSpatial(args: Record<string, unknown>): Promise<CallToolResult> {
+  const query = { polygon: args.polygon }; // args.polygon might be undefined or wrong type!
+  const buildings = await this.buildingsService.findAll(query);
+  return { content: [{ type: 'text', text: JSON.stringify(buildings, null, 2) }] };
+}
+
+// ✅ CORRECT: Proper input validation
+async searchBuildingsSpatial(args: Record<string, unknown>): Promise<CallToolResult> {
+  try {
+    // Validate required parameters
+    if (!args.polygon || typeof args.polygon !== 'string') {
+      throw new Error('polygon parameter is required and must be a valid WKT POLYGON string');
+    }
+
+    const query = { polygon: args.polygon };
+    const buildings = await this.buildingsService.findAll(query);
+    return { content: [{ type: 'text', text: JSON.stringify(buildings, null, 2) }] };
+  } catch (error) {
+    // Error handling...
+  }
+}
+```
+
+#### Error 4: Incorrect Tool Registration in McpServerService
+```typescript
+// ❌ WRONG: Missing await in async tool calls
+private async handleDynamicToolCall(toolName: string, args: unknown): Promise<CallToolResult> {
+  if (toolName === 'search_buildings_basic') {
+    return this.buildingsMcpHttpTool.searchBuildingsBasic(args as Record<string, unknown>); // Missing await!
+  }
+}
+
+// ✅ CORRECT: Proper async handling
+private async handleDynamicToolCall(toolName: string, args: unknown): Promise<CallToolResult> {
+  if (toolName === 'search_buildings_basic') {
+    return await this.buildingsMcpHttpTool.searchBuildingsBasic(args as Record<string, unknown>);
+  }
+}
+```
+
+#### Error 5: Incomplete Tool Schema Definitions
+```typescript
+// ❌ WRONG: Missing proper TypeScript typing for inputSchema
+static getToolDefinitions(): Array<{
+  name: string;
+  description: string;
+  inputSchema: object; // Too generic!
+}> {
+  return [{
+    inputSchema: { /* incomplete schema */ }
+  }];
+}
+
+// ✅ CORRECT: Proper TypeScript typing and complete schema
+static getToolDefinitions(): Array<{
+  name: string;
+  description: string;
+  inputSchema: {
+    type: string;
+    properties: Record<string, unknown>;
+    required: string[];
+  };
+}> {
+  return [{
+    inputSchema: {
+      type: 'object',
+      properties: {
+        param1: { type: 'string', description: 'Parameter description' },
+      },
+      required: ['param1'], // Specify required parameters
+    },
+  }];
+}
+```
+
+#### Error 6: Missing Service Dependency Injection
+```typescript
+// ❌ WRONG: Service not added to TransportDependencies interface
+interface TransportDependencies {
+  healthService: HealthService;
+  // Missing: buildingsService: BuildingsService;
+}
+
+// ❌ WRONG: Service not injected in McpServerService constructor
+constructor(
+  private readonly healthService: HealthService,
+  // Missing: private readonly buildingsService: BuildingsService,
+) {}
+
+// ✅ CORRECT: Complete dependency injection setup
+interface TransportDependencies {
+  healthService: HealthService;
+  buildingsService: BuildingsService; // Added
+}
+
+constructor(
+  private readonly healthService: HealthService,
+  private readonly buildingsService: BuildingsService, // Added
+) {
+  // Initialize MCP tools with proper dependencies
+  this.buildingsMcpHttpTool = new BuildingsMcpHttpTool(this.buildingsService, loggerService);
+}
+```
+
+**CRITICAL CHECKLIST for AI Assistants:**
+- [ ] **ALWAYS use async/await** for service calls in MCP tool methods
+- [ ] **ALWAYS add try/catch** error handling in every tool method
+- [ ] **ALWAYS validate input parameters** before using them
+- [ ] **ALWAYS await async tool calls** in McpServerService handlers
+- [ ] **ALWAYS use proper TypeScript typing** for tool definitions
+- [ ] **ALWAYS inject services** in TransportDependencies and McpServerService
 
 ## MCP Tool Definition Best Practices
 
@@ -870,6 +1075,106 @@ static getToolDefinitions() {
 - [ ] **DEPENDENCY INJECTION**: Add service to `TransportDependencies` interface
 - [ ] **HANDLER REGISTRATION**: Register tools in `McpServerService` switch statement
 - [ ] **COMPREHENSIVE TESTING**: Add MCP E2E tests for all tools
+
+### CRITICAL: MCP Testing Best Practices
+
+**AI Assistant MUST implement comprehensive MCP tests to avoid runtime failures:**
+
+#### Unit Tests for MCP Tools
+```typescript
+describe('BuildingsMcpHttpTool', () => {
+  let tool: BuildingsMcpHttpTool;
+  let buildingsService: jest.Mocked<BuildingsService>;
+
+  beforeEach(async () => {
+    const mockBuildingsService = { findAll: jest.fn() };
+    const mockLogger = { child: jest.fn().mockReturnThis(), trace: jest.fn(), error: jest.fn() };
+    
+    // CRITICAL: Proper mocking setup
+    buildingsService = mockBuildingsService as jest.Mocked<BuildingsService>;
+    tool = new BuildingsMcpHttpTool(buildingsService, mockLogger as any);
+  });
+
+  it('should handle service errors gracefully', async () => {
+    // CRITICAL: Test error scenarios
+    const error = new Error('Database connection failed');
+    buildingsService.findAll.mockRejectedValue(error);
+
+    const result = await tool.searchBuildingsBasic({ cadastral_code: 'CAD001' });
+
+    // CRITICAL: Verify error response structure
+    expect((result.content[0] as any).text).toContain('Failed to search buildings');
+    expect((result.content[0] as any).text).toContain('Database connection failed');
+  });
+
+  it('should validate input parameters', async () => {
+    // CRITICAL: Test input validation
+    const result = await tool.searchBuildingsSpatial({});
+    expect((result.content[0] as any).text).toContain('polygon parameter is required');
+  });
+});
+```
+
+#### E2E Tests for MCP Integration
+```typescript
+describe('Buildings MCP Integration (e2e)', () => {
+  let app: INestApplication;
+  let databaseService: DatabaseService;
+
+  beforeEach(async () => {
+    // CRITICAL: Clean up test data before each test
+    await databaseService.queryNone('DELETE FROM public.buildings WHERE cadastral_code LIKE $1', ['TEST_%']);
+    
+    // CRITICAL: Insert test data for consistent testing
+    await databaseService.queryNone(`INSERT INTO public.buildings (...) VALUES (...)`);
+  });
+
+  afterEach(async () => {
+    // CRITICAL: Clean up test data after each test
+    await databaseService.queryNone('DELETE FROM public.buildings WHERE cadastral_code LIKE $1', ['TEST_%']);
+  });
+
+  it('should execute MCP tools via HTTP transport', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/mcapi/mcp/tools/call')
+      .send({
+        name: 'search_buildings_basic',
+        arguments: { cadastral_code: 'TEST_CAD001' }
+      })
+      .expect(200);
+
+    // CRITICAL: Verify response structure and content
+    expect(response.body.content).toBeDefined();
+    expect(response.body.content[0].type).toBe('text');
+    
+    const buildings = JSON.parse(response.body.content[0].text);
+    expect(buildings).toHaveLength(1);
+    expect(buildings[0].cadastral_code).toBe('TEST_CAD001');
+  });
+
+  it('should handle invalid tool parameters', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/mcapi/mcp/tools/call')
+      .send({
+        name: 'search_buildings_spatial',
+        arguments: {} // Missing required polygon parameter
+      })
+      .expect(200);
+
+    const result = JSON.parse(response.body.content[0].text);
+    expect(result.error).toBe('Failed to search buildings spatially');
+    expect(result.message).toContain('polygon parameter is required');
+  });
+});
+```
+
+**CRITICAL Testing Checklist:**
+- [ ] **Unit tests** for all MCP tool methods with error scenarios
+- [ ] **Input validation tests** for all tool parameters
+- [ ] **Service error handling tests** with mocked failures
+- [ ] **E2E tests** for complete MCP tool execution via HTTP
+- [ ] **Database integration tests** with real data setup/cleanup
+- [ ] **Error response format validation** for consistent error handling
 
 ### Code Quality Requirements
 

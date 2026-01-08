@@ -21,7 +21,7 @@ interface IMcpServerService {
       required: string[];
     };
   }>;
-  executeToolCall(toolName: string, args: unknown): CallToolResult;
+  executeToolCall(toolName: string, args: unknown): Promise<CallToolResult>;
   getAvailableResources(): Array<{
     uri: string;
     name: string;
@@ -114,7 +114,7 @@ export class HttpTransport implements McpTransport {
       });
 
       req.on('end', (): void => {
-        ((): void => {
+        (async (): Promise<void> => {
           try {
             const request = JSON.parse(body);
             
@@ -130,7 +130,7 @@ export class HttpTransport implements McpTransport {
             };
 
             // Handle the MCP request
-            this.handleMcpRequest(request, mockTransport);
+            await this.handleMcpRequest(request, mockTransport);
           } catch (error) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ 
@@ -195,7 +195,7 @@ export class HttpTransport implements McpTransport {
    * All tool and resource operations are handled dynamically by the MCP server service.
    * @private
    */
-  private handleMcpRequest(request: unknown, transport: { send: (response: unknown) => void }): void {
+  private async handleMcpRequest(request: unknown, transport: { send: (response: unknown) => void }): Promise<void> {
     try {
       // Validate request is an object
       if (!request || typeof request !== 'object') {
@@ -220,7 +220,7 @@ export class HttpTransport implements McpTransport {
           this.handleToolsList(req, transport);
           break;
         case 'tools/call':
-          this.handleToolsCall(req, transport);
+          await this.handleToolsCall(req, transport);
           break;
         case 'resources/list':
           this.handleResourcesList(req, transport);
@@ -284,7 +284,7 @@ export class HttpTransport implements McpTransport {
    * Handle tools/call request
    * @private
    */
-  private handleToolsCall(req: { id?: unknown; params?: unknown }, transport: { send: (response: unknown) => void }): void {
+  private async handleToolsCall(req: { id?: unknown; params?: unknown }, transport: { send: (response: unknown) => void }): Promise<void> {
     if (!this.mcpServerService) {
       this.sendServiceNotInitializedError(req, transport);
       return;
@@ -300,7 +300,7 @@ export class HttpTransport implements McpTransport {
         return;
       }
       
-      const result = this.mcpServerService.executeToolCall(toolName, toolArgs);
+      const result = await this.mcpServerService.executeToolCall(toolName, toolArgs);
       transport.send({
         jsonrpc: HttpTransport.jsonrpcVersion,
         id: req.id,
