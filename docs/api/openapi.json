@@ -140,7 +140,7 @@
   "tags": [],
   "servers": [
     {
-      "url": "http://localhost:3232",
+      "url": "http://localhost:3232/gateway",
       "description": "API Server"
     }
   ],

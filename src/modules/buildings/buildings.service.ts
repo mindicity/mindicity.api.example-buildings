@@ -63,8 +63,7 @@ export class BuildingsService {
           'updated_by'
         ])
         .from('public.buildings')
-        .where('visible = $1', [true])
-        .limit(1);
+        .where('visible = $1', [true]);
 
       // Add text filters
       if (query.cadastral_code) {
