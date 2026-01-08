@@ -107,9 +107,9 @@ getStatus(): Status {
   // Method implementation...
 }
 
-// ✅ MANDATORY: Static methods (use class name)
+// ✅ CORRECT: Static methods don't need trace logging
 static getDefinitions(): Definition[] {
-  console.log('ClassName.getDefinitions()'); // Only for static methods
+  // Static utility methods don't need logging
   // Method implementation...
 }
 ```
@@ -522,11 +522,9 @@ getHealthStatus(): HealthStatus {
   // Implementation...
 }
 
-// ✅ CORRECT: Static methods use class name
+// ✅ CORRECT: Static methods don't need trace logging
 static getToolDefinitions(): ToolDefinition[] {
-  // Note: Static methods cannot use instance logger
-  // Use console.log only for static methods if absolutely necessary
-  console.log('HealthMcpHttpTool.getToolDefinitions()');
+  // Static utility methods don't need logging
   // Implementation...
 }
 
@@ -539,10 +537,10 @@ async findUsers(query: UserQuery): Promise<UserData[]> {
 ```
 
 **Rules**:
-- **EVERY method** must start with trace logging
+- **EVERY method** must start with trace logging (except static utility methods)
 - **Include ALL parameters** in the trace log object
 - **Use method name exactly** as it appears in the function signature
-- **Static methods**: Use class name prefix (e.g., `ClassName.methodName()`)
+- **Static methods**: Don't need trace logging as they are utility methods
 - **Private methods**: Follow same rule as public methods
 - **Constructors**: Log with `constructor()` and include all parameters
 
@@ -738,8 +736,7 @@ export class {ModuleName}McpHttpTool {
       examples: Array<{ scenario: string; expected_result: string }>;
     };
   }> {
-    // MANDATORY: Static methods use console.log for trace logging
-    console.log('{ModuleName}McpHttpTool.getToolDefinitions()');
+    // CRITICAL: Static methods don't need trace logging
     
     return [
       {

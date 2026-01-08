@@ -156,8 +156,6 @@ export class BuildingsMcpHttpTool {
       examples: Array<{ scenario: string; expected_result: string }>;
     };
   }> {
-    console.log('BuildingsMcpHttpTool.getToolDefinitions()');
-    
     return [
       {
         name: 'search_buildings_basic',
