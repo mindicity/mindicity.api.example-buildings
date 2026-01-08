@@ -9,8 +9,8 @@ export interface BuildingData {
   name?: string;
   building_type: string;
   address: string;
-  geometry?: object;
-  basic_data: object;
+  geometry?: Record<string, any>;
+  basic_data: Record<string, any>;
   visible: boolean;
   created_at: Date;
   updated_at?: Date;

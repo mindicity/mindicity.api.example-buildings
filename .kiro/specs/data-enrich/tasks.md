@@ -25,7 +25,8 @@ This implementation plan creates a NestJS-based API for building data retrieval 
     - Create BuildingsQuery and BuildingData interfaces for service layer
     - _Requirements: 1.2, 1.3, 5.7_
 
-  - [ ]* 2.3 Write property test for complete field response
+  - [x] 2.3 Write property test for complete field response
+
     - **Property 1: Complete Field Response**
     - **Validates: Requirements 1.2, 1.3**
 
