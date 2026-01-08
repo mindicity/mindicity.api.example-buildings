@@ -44,6 +44,81 @@
           "health"
         ]
       }
+    },
+    "/mcapi/data-enrich/buildings/list": {
+      "get": {
+        "operationId": "BuildingsController_findAll",
+        "parameters": [
+          {
+            "name": "cadastral_code",
+            "required": false,
+            "in": "query",
+            "description": "Cadastral code for exact matching",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "municipality_code",
+            "required": false,
+            "in": "query",
+            "description": "Municipality code for exact matching",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "required": false,
+            "in": "query",
+            "description": "Building name for case-insensitive partial matching",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "building_type",
+            "required": false,
+            "in": "query",
+            "description": "Building type for exact matching",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "address",
+            "required": false,
+            "in": "query",
+            "description": "Address for case-insensitive partial matching",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "polygon",
+            "required": false,
+            "in": "query",
+            "description": "WKT polygon for spatial filtering in EPSG:4326",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get buildings with optional filtering",
+        "tags": [
+          "buildings"
+        ]
+      }
     }
   },
   "info": {

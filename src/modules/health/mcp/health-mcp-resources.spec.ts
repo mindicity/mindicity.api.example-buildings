@@ -52,7 +52,7 @@ describe('HealthMcpResources', () => {
       expect(swaggerResource.name).toBe('NestJS API OpenAPI Specification');
       expect(swaggerResource.description).toContain('Complete OpenAPI 3.0 specification for NestJS API');
       expect(swaggerResource.description).toContain('Production-ready NestJS API with Fastify and Pino');
-      expect(swaggerResource.description).toContain('2 available API endpoints'); // health endpoints
+      expect(swaggerResource.description).toContain('3 available API endpoints'); // health + buildings endpoints
       expect(swaggerResource.description).toContain('/mcapi/data-enrich/health/ping');
       expect(swaggerResource.description).toContain('/mcapi/data-enrich/health/status');
       expect(swaggerResource.mimeType).toBe('application/json');

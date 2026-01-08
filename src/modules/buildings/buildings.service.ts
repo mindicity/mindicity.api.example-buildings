@@ -31,14 +31,20 @@ export class BuildingsService {
 
   /**
    * Retrieves buildings based on provided query filters.
-   * Supports text filtering and spatial polygon filtering.
+   * Supports text filtering and spatial polygon filtering with PostGIS.
    * @param query - The query parameters for filtering buildings
    * @returns Promise resolving to array of building data
+   * @throws {Error} When spatial polygon format is invalid
    */
   async findAll(query: BuildingsQuery): Promise<BuildingData[]> {
     this.logger.trace('findAll()', { query });
 
     try {
+      // Validate spatial polygon if provided
+      if (query.polygon) {
+        await this.validateWktPolygon(query.polygon);
+      }
+
       // Build the base query with required fields
       let queryBuilder = SqlQueryBuilder
         .create()
@@ -60,41 +66,33 @@ export class BuildingsService {
         .where('visible = $1', [true]);
 
       // Add text filters
-      let paramIndex = 2; // Start from 2 since visible=true uses $1
-
       if (query.cadastral_code) {
-        queryBuilder = queryBuilder.where(`cadastral_code = $${paramIndex}`, [query.cadastral_code]);
-        paramIndex++;
+        queryBuilder = queryBuilder.where('cadastral_code = $1', [query.cadastral_code]);
       }
 
       if (query.municipality_code) {
-        queryBuilder = queryBuilder.where(`municipality_code = $${paramIndex}`, [query.municipality_code]);
-        paramIndex++;
+        queryBuilder = queryBuilder.where('municipality_code = $1', [query.municipality_code]);
       }
 
       if (query.building_type) {
-        queryBuilder = queryBuilder.where(`building_type = $${paramIndex}`, [query.building_type]);
-        paramIndex++;
+        queryBuilder = queryBuilder.where('building_type = $1', [query.building_type]);
       }
 
       if (query.name) {
-        queryBuilder = queryBuilder.where(`name ILIKE $${paramIndex}`, [`%${query.name}%`]);
-        paramIndex++;
+        queryBuilder = queryBuilder.where('name ILIKE $1', [`%${query.name}%`]);
       }
 
       if (query.address) {
-        queryBuilder = queryBuilder.where(`address ILIKE $${paramIndex}`, [`%${query.address}%`]);
-        paramIndex++;
+        queryBuilder = queryBuilder.where('address ILIKE $1', [`%${query.address}%`]);
       }
 
       // Add spatial filter if polygon is provided
       if (query.polygon) {
-        // Validate and add spatial intersection query
+        // Use ST_Intersects with ST_GeomFromText for spatial intersection in EPSG:4326
         queryBuilder = queryBuilder.where(
-          `ST_Intersects(geom, ST_GeomFromText($${paramIndex}, 4326))`,
+          'ST_Intersects(geom, ST_GeomFromText($1, 4326))',
           [query.polygon]
         );
-        paramIndex++;
       }
 
       // Order by creation date for consistent results
@@ -104,7 +102,7 @@ export class BuildingsService {
 
       const results = await this.databaseService.queryMany<any>(sql, params);
 
-      // Transform results to proper format
+      // Transform results to proper format with GeoJSON geometry
       const buildings: BuildingData[] = results.map(row => ({
         id: row.id,
         cadastral_code: row.cadastral_code,
@@ -133,11 +131,48 @@ export class BuildingsService {
 
       return buildings;
     } catch (error) {
+      // Handle spatial query errors with descriptive messages
+      if (error instanceof Error && error.message && error.message.includes('Invalid geometry')) {
+        this.logger.error('invalid WKT polygon format provided', {
+          polygon: query.polygon,
+          correlationId: ContextUtil.getCorrelationId()
+        });
+        throw new Error('Invalid WKT polygon format. Please provide a valid WKT POLYGON string in EPSG:4326 coordinate system.');
+      }
+
       this.logger.error('failed to retrieve buildings', {
         err: error,
         correlationId: ContextUtil.getCorrelationId()
       });
       throw error;
+    }
+  }
+
+  /**
+   * Validates WKT polygon format using PostGIS ST_GeomFromText function.
+   * @param wktPolygon - WKT polygon string to validate
+   * @throws {Error} When WKT polygon format is invalid
+   */
+  private async validateWktPolygon(wktPolygon: string): Promise<void> {
+    this.logger.trace('validateWktPolygon()', { wktPolygon });
+
+    try {
+      // Use PostGIS to validate the WKT polygon format
+      const validationResult = await this.databaseService.queryOne<{ is_valid: boolean }>(
+        'SELECT ST_GeomFromText($1, 4326) IS NOT NULL as is_valid',
+        [wktPolygon]
+      );
+
+      if (!validationResult?.is_valid) {
+        throw new Error('Invalid WKT polygon format. Please provide a valid WKT POLYGON string.');
+      }
+    } catch (error) {
+      this.logger.error('WKT polygon validation failed', {
+        err: error,
+        wktPolygon,
+        correlationId: ContextUtil.getCorrelationId()
+      });
+      throw new Error('Invalid WKT polygon format. Please provide a valid WKT POLYGON string.');
     }
   }
 }

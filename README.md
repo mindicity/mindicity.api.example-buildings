@@ -1,1379 +1,429 @@
-# Data Enrich API
+# Buildings API
 
-Data enrichment API for geospatial building data retrieval with PostGIS spatial capabilities. Built with NestJS, Fastify adapter, Pino logging, MCP server integration, and comprehensive configuration management for the Mindicity ecosystem.
+A production-ready NestJS-based API for building data management with advanced PostGIS spatial capabilities and comprehensive property-based testing.
 
-## 🚨 MANDATORY: Bootstrap Process for New Projects
+## 🚀 Features
 
-**CRITICAL REQUIREMENT:** All new Mindicity API REST projects MUST be created using the bootstrap process from this base repository.
+### Core Functionality
+- **RESTful API** for building data retrieval with comprehensive filtering
+- **Text-based filtering** (cadastral code, municipality, building type, name, address)
+- **Advanced spatial queries** using PostGIS (WKT polygon intersection)
+- **GeoJSON geometry output** with EPSG:4326 coordinate system support
+- **Comprehensive error handling** with descriptive error messages
 
-### ⚡ Quick Bootstrap
+### Developer Experience
+- **OpenAPI/Swagger documentation** with interactive API explorer
+- **Property-based testing** with fast-check for universal correctness validation
+- **Structured logging** with correlation IDs for request tracing
+- **Type-safe TypeScript** implementation throughout
+- **Comprehensive test coverage** (unit, integration, and property-based tests)
 
-```bash
-# Step 1: Clone this base API repository
-git clone <mindicity-api-base-repository-url> your-new-api-project
-cd your-new-api-project
+### Production Ready
+- **Docker support** with multi-stage builds
+- **Health checks** and monitoring endpoints
+- **Security best practices** (parameterized queries, input validation)
+- **Performance optimized** with database indexing strategies
+- **Deployment documentation** for multiple environments
 
-# Step 2: Follow the bootstrap steering guide
-# See .kiro/steering/mindicity-api-bootstrap-steering.md for automated setup
+## 📋 Prerequisites
 
-# Step 3: Add your API module after bootstrap
-nest generate module modules/your-api-name --no-spec
-nest generate controller modules/your-api-name --no-spec  
-nest generate service modules/your-api-name --no-spec
-```
+- **Node.js** 18.x or higher
+- **PostgreSQL** 13.x or higher with PostGIS extension
+- **npm** 8.x or higher
 
-### 🎯 Why Bootstrap is Mandatory
+## 🛠️ Quick Start
 
-- ✅ **Consistency:** All APIs follow identical architecture patterns
-- ✅ **Quality:** Pre-tested, production-ready foundation
-- ✅ **Speed:** Zero setup time - immediate development start
-- ✅ **Compliance:** Automatic adherence to Mindicity standards
-- ✅ **Maintenance:** Easier updates across all API projects
-
-**⚠️ IMPORTANT:** Projects not following this bootstrap process will be rejected in code review.
-
-## 🚀 Features 
-
-- **NestJS Framework** with Fastify adapter for high performance
-- **Context-Aware Logging** with ContextLoggerService and automatic correlation IDs
-- **SqlQueryBuilder** for type-safe, secure database queries with automatic parameter binding
-- **Zod Validation** for environment variables and request/response schemas
-- **Swagger Documentation** with auto-generated OpenAPI specs
-- **MCP Server Integration** for AI agent connectivity with HTTP, SSE, and STDIO transports
-- **Global Error Handling** with structured error responses and custom exceptions
-- **Security Middleware** including Helmet and CORS
-- **Infrastructure Isolation** with dedicated modules for DB, MCP, and external services
-- **Comprehensive Testing** with unit and E2E tests (85%+ coverage)
-- **Docker Support** with multi-stage builds and security best practices
-- **TypeScript Strict Mode** for type safety
-- **Health Check Module** with comprehensive health monitoring
-- **Template Module Structure** ready for customization and extension
-- **Kiro Steering Documents** for automated project bootstrap and development guidance
-
-## 📋 Table of Contents
-
-- [Mandatory Bootstrap Process](#-mandatory-bootstrap-process-for-new-projects)
-- [Quick Start](#quick-start)
-- [Bootstrap New Project](#bootstrap-new-project)
-- [Configuration](#configuration)
-- [MCP Server Integration](#-mcp-server-integration)
-- [API Endpoints](#api-endpoints)
-- [Development](#development)
-- [Database Query Guidelines](#️-database-query-guidelines)
-- [Testing](#testing)
-- [Docker](#docker)
-- [Documentation](#documentation)
-- [Architecture](#architecture)
-- [Current Project Status](#-current-project-status)
-- [Kiro Steering](#kiro-steering)
-
-## 🏃 Quick Start
-
-### Prerequisites
-
-- Node.js 20+ 
-- npm 9+
-- Docker (optional)
-
-### Installation
+### 1. Installation
 
 ```bash
 # Clone the repository
-git clone -b main https://github.com/mindicity/mindicity.ecosystem.sdk.template-api.git
-cd mindicity.ecosystem.sdk.template-api
+git clone <repository-url>
+cd buildings-api
 
 # Install dependencies
 npm install
+```
 
-# Copy environment file
+### 2. Environment Setup
+
+```bash
+# Copy environment template
 cp .env.example .env
 
-# Start development server
-npm run dev
+# Edit .env with your configuration
+# DATABASE_HOST=localhost
+# DATABASE_PORT=5432
+# DATABASE_NAME=buildings_db
+# DATABASE_USER=buildings_user
+# DATABASE_PASSWORD=your_password
 ```
 
-The API will be available at:
+### 3. Database Setup
 
-- **Health Check**: <http://localhost:3232/mcapi/health/ping>
-- **Swagger UI**: <http://localhost:3232/mcapi/docs/swagger/ui>
-- **Buildings Module**: Currently a placeholder - no active endpoints until implementation
+```sql
+-- Connect to PostgreSQL as superuser
+CREATE DATABASE buildings_db;
+CREATE USER buildings_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE buildings_db TO buildings_user;
 
-### 📁 What's Included
+-- Connect to buildings_db
+\c buildings_db;
 
-**Template Module Structure:**
-```
-src/modules/template/
-├── template.controller.ts     # Placeholder controller with proper setup
-├── template.service.ts        # Service with ContextLogger and DatabaseService
-├── template.module.ts         # Complete NestJS module configuration
-├── template.controller.spec.ts # Unit tests for controller
-├── template.service.spec.ts   # Unit tests for service
-├── dto/                       # Empty - ready for your DTOs
-├── interfaces/                # Empty - ready for your interfaces
-├── entities/                  # Empty - ready for your entities
-└── repositories/              # Empty - ready for your repositories
+-- Enable PostGIS extension
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+-- Create buildings table (see docs/deployment/README.md for complete schema)
 ```
 
-**Infrastructure Ready:**
-- ✅ ContextLoggerService with correlation ID tracking
-- ✅ DatabaseService with connection pooling and error handling
-- ✅ Swagger documentation setup
-- ✅ Global exception handling
-- ✅ Request/response interceptors
-- ✅ Comprehensive test coverage
-- ✅ MCP Server with HTTP/SSE/STDIO transports for AI agent connectivity
-- ✅ Health check module with detailed monitoring
-
-## 🎯 Bootstrap New Project
-
-This template includes Kiro steering documents for automated project creation. To create a new API project from this template:
-
-### Using Kiro Bootstrap (Recommended)
+### 4. Running the Application
 
 ```bash
-# Create a new project using Kiro
-kiro bootstrap --template mindicity-api --name user-management --description "User management and authentication API"
-```
+# Development mode with hot reload
+npm run start:dev
 
-This will:
-
-1. Clone the template repository
-2. Rename the template module to your project name
-3. Update all references and configurations
-4. Install dependencies and verify the setup
-5. Configure MCP server integration for AI agent connectivity
-6. Provide next steps for development
-
-### Manual Setup
-
-If you prefer manual setup:
-
-```bash
-# Clone the template
-git clone -b main https://github.com/mindicity/mindicity.ecosystem.sdk.template-api.git my-new-api
-cd my-new-api
-
-# Rename the template module
-mv src/modules/template src/modules/my-module
-
-# Update all references manually (see .kiro/steering/mindicity-api-bootstrap-steering.md for details)
-# Update package.json, app.module.ts, routes.config.ts, etc.
-
-# Install and verify
-npm install
+# Production build and start
 npm run build
+npm run start:prod
+```
+
+### 5. Verify Installation
+
+```bash
+# Check health endpoint
+curl http://localhost:3000/health
+
+# Access API documentation
+open http://localhost:3000/api
+```
+
+## 🔧 API Usage
+
+### Basic Queries
+
+```bash
+# Get all buildings
+GET /buildings
+
+# Filter by building type
+GET /buildings?building_type=residential
+
+# Search by name (partial match, case-insensitive)
+GET /buildings?name=school
+
+# Filter by municipality
+GET /buildings?municipality_code=NYC
+```
+
+### Spatial Queries
+
+```bash
+# Buildings within a rectangular area (WKT POLYGON format)
+GET /buildings?polygon=POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))
+
+# Geographic coordinates (longitude, latitude)
+GET /buildings?polygon=POLYGON((-74.1 40.7, -73.9 40.7, -73.9 40.8, -74.1 40.8, -74.1 40.7))
+```
+
+### Combined Filters
+
+```bash
+# Multiple text filters
+GET /buildings?building_type=commercial&municipality_code=NYC
+
+# Spatial + text filters
+GET /buildings?polygon=POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))&building_type=residential
+```
+
+### Response Format
+
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "cadastral_code": "ABC123",
+    "municipality_code": "NYC",
+    "name": "Example Building",
+    "building_type": "residential",
+    "address": "123 Main Street, New York, NY",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [-74.006, 40.7128]
+    },
+    "basic_data": {
+      "floors": 3,
+      "year_built": 1995
+    },
+    "visible": true,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z",
+    "updated_by": "system"
+  }
+]
+```
+
+## 🧪 Testing
+
+### Running Tests
+
+```bash
+# Unit tests
 npm run test
+
+# Integration tests (end-to-end)
+npm run test:e2e
+
+# Test coverage report
+npm run test:cov
+
+# Watch mode for development
+npm run test:watch
 ```
 
-## ⚙️ Configuration
+### Test Coverage
 
-Configuration is managed through environment variables with Zod validation. All configuration files are located in `src/config/`.
+The project includes comprehensive testing:
 
-### Environment Variables
+- **Unit Tests**: Service logic, DTOs, and utilities
+- **Integration Tests**: Complete API request-response cycles
+- **Property-Based Tests**: Universal correctness validation using fast-check
+- **Spatial Tests**: PostGIS spatial query validation
+- **Error Handling Tests**: Comprehensive error scenario coverage
 
-Create a `.env` file in the project root:
+### Property-Based Testing
 
-```bash
-# Server Configuration
-APP_PORT=3232
-APP_API_PREFIX=/mcapi
-APP_API_SCOPE_PREFIX=
+The API uses property-based testing to validate universal properties:
 
-# MCP Server Configuration
-MCP_ENABLED=true
-MCP_PORT=3235
-MCP_SERVER_NAME=mindicity-api-template
-MCP_SERVER_VERSION=1.0.0
+- **Property 1-8**: Service layer correctness (filtering, spatial queries, error handling)
+- **Property 9**: HTTP response format consistency
+- **Property 10**: Error response consistency
 
-# Security
-APP_CORS_ENABLED=true
-APP_BODYPARSER_LIMIT=20MB
-APP_ENABLE_COMPRESSION=true
+## 📚 Documentation
 
-# Error Handling
-APP_ERR_DETAIL=false
-APP_ERR_MESSAGE=false
+### API Documentation
+- **[Complete API Guide](docs/api/buildings-api.md)** - Comprehensive API documentation with examples
+- **[Swagger UI](http://localhost:3000/api)** - Interactive API explorer (when running)
+- **[OpenAPI JSON](http://localhost:3000/api-json)** - Machine-readable API specification
 
-# Logging
-APP_LOG_LEVEL=debug
-APP_LOG_TIMEZONE=Europe/Rome
-APP_LOG_TRANSPORTS=console
-APP_LOG_PREFIX=api_
-APP_LOG_TRUNCATE=-1
+### Deployment Documentation
+- **[Deployment Guide](docs/deployment/README.md)** - Complete deployment instructions for all environments
+- **[Docker Setup](docs/deployment/README.md#docker-deployment)** - Containerized deployment
+- **[Cloud Deployment](docs/deployment/README.md#cloud-deployment)** - AWS/GCP/Azure deployment guides
 
+## 🏗️ Architecture
 
-# Swagger
-APP_SWAGGER_HOSTNAME=http://localhost:3232
-```
-
-### Configuration Validation
-
-The application uses Zod schemas to validate environment variables at startup:
-
-- **App Config** (`src/config/app.config.ts`): Server settings, security, and API configuration
-- **Log Config** (`src/config/log.config.ts`): Logging levels, formatting, and transport settings
-
-Invalid configuration will cause the application to fail at startup with detailed error messages.
-
-## 🤖 MCP Server Integration
-
-The template includes a built-in **Model Context Protocol (MCP) server** that allows AI agents to interact with your API through structured tools and resources.
-
-### 🚨 MANDATORY MCP TOOL IMPLEMENTATION
-
-**CRITICAL:** When creating new API modules, MCP tools MUST be implemented according to these rules:
-
-#### **Default Behavior: HTTP Transport**
-- **IF NO TRANSPORT SPECIFIED**: MCP tools MUST be implemented for **HTTP transport** (default)
-- **REASON**: HTTP provides complete functionality, production-ready error handling, and MCP Inspector compatibility
-- **EXAMPLE**: `"Create users API module"` → HTTP transport with full tools
-
-#### **Explicit SSE Implementation**
-- **IF SSE EXPLICITLY REQUESTED**: MCP tools MUST be implemented **ONLY for SSE transport**
-- **USAGE**: Only when real-time event streaming is specifically required
-- **EXAMPLE**: `"Create users API with SSE transport"` → SSE transport only
-
-#### **Mandatory Tool Generation**
-
-For each API endpoint created, corresponding MCP tools MUST be generated:
-
-```typescript
-// Example: Users API Module
-// Endpoints → Automatic MCP Tools
-
-GET    /users           → 'get_users_list'
-POST   /users           → 'create_user'  
-GET    /users/:id       → 'get_user_by_id'
-PUT    /users/:id       → 'update_user'
-DELETE /users/:id       → 'delete_user'
-GET    /users/search    → 'search_users'
-
-// Orders API Module  
-GET    /orders          → 'get_orders_list'
-POST   /orders          → 'create_order'
-GET    /orders/:id      → 'get_order_by_id'
-PUT    /orders/:id/status → 'update_order_status'
-POST   /orders/:id/cancel → 'cancel_order'
-```
-
-**Tool Naming Convention (MANDATORY):**
-- Pattern: `{action}_{module}_{entity}[_{qualifier}]`
-- Use snake_case for all tool names
-- Be specific and intention-based
-
-### MCP Resources Architecture
-
-**CRITICAL:** MCP resources MUST follow semantic URI schemes for better organization and AI agent understanding.
-
-#### **Resource URI Schemes (MANDATORY)**
-
-All MCP resources MUST use one of these standardized URI schemes:
-
-| Scheme | Purpose | Examples | Description |
-|--------|---------|----------|-------------|
-| `doc://` | Documentation | `doc://openapi`, `doc://readme`, `doc://changelog` | API documentation, guides, specifications |
-| `schema://` | JSON Schemas | `schema://user`, `schema://health`, `schema://error` | Data validation schemas, type definitions |
-| `examples://` | Code Examples | `examples://auth`, `examples://crud`, `examples://health` | Request/response examples, usage patterns |
-| `rules://` | Business Rules | `rules://validation`, `rules://permissions`, `rules://workflow` | Business logic, validation rules, policies |
-| `config://` | Configuration | `config://routes`, `config://env`, `config://swagger` | Application configuration, settings |
-
-#### **Resource Naming Convention (MANDATORY)**
-
-- **Pattern**: `{scheme}://{simple-id}`
-- **Simple ID**: Use lowercase, single word or hyphenated identifiers
-- **No Scope Prefix**: Remove project-specific prefixes for cleaner URIs
-- **Semantic**: Choose meaningful, intention-based identifiers
-
-#### **Standard Resource Implementation**
-
-```typescript
-// ✅ CORRECT: Semantic URI schemes
-const resources = [
-  {
-    uri: 'doc://openapi',
-    name: 'API OpenAPI Specification',
-    description: 'Complete OpenAPI/Swagger specification for the API endpoints',
-    mimeType: 'application/json',
-  },
-  {
-    uri: 'doc://readme',
-    name: 'API Documentation',
-    description: 'Main API documentation and usage guide',
-    mimeType: 'text/markdown',
-  },
-  {
-    uri: 'schema://health',
-    name: 'Health Check Schema',
-    description: 'JSON schema for health check responses',
-    mimeType: 'application/json',
-  },
-  {
-    uri: 'examples://health',
-    name: 'Health Check Examples',
-    description: 'Example requests and responses for health endpoints',
-    mimeType: 'application/json',
-  },
-  {
-    uri: 'rules://validation',
-    name: 'Validation Rules',
-    description: 'Business validation rules and constraints',
-    mimeType: 'application/json',
-  },
-];
-
-// ❌ WRONG: Old swagger:// scheme with scope prefix
-{
-  uri: 'swagger://docs/project/swagger/specs',  // Too complex, scope-dependent
-  name: 'API Swagger Specification',
-}
-```
-
-#### **Resource Handler Implementation**
-
-```typescript
-private async handleResourcesRead(req: { params?: { uri?: string } }, transport: any): Promise<void> {
-  const uri = req.params?.uri;
-  
-  switch (uri) {
-    case 'doc://openapi':
-      await this.fetchOpenApiResource(uri, transport);
-      break;
-    case 'doc://readme':
-      await this.fetchReadmeResource(uri, transport);
-      break;
-    case 'schema://health':
-      await this.fetchHealthSchemaResource(uri, transport);
-      break;
-    case 'examples://health':
-      await this.fetchHealthExamplesResource(uri, transport);
-      break;
-    case 'rules://validation':
-      await this.fetchValidationRulesResource(uri, transport);
-      break;
-    default:
-      transport.send({
-        error: {
-          code: -32601,
-          message: `Unknown resource URI: ${uri}`,
-          data: {
-            supportedSchemes: ['doc://', 'schema://', 'examples://', 'rules://', 'config://'],
-            availableResources: ['doc://openapi', 'doc://readme', 'schema://health', 'examples://health'],
-          },
-        },
-      });
-  }
-}
-```
-
-#### **Benefits of Semantic URI Schemes**
-
-1. **AI Agent Understanding**: Clear categorization helps AI agents understand resource types
-2. **Simplified URIs**: No complex paths or scope prefixes
-3. **Consistent Organization**: Standardized schemes across all Mindicity APIs
-4. **Better Discovery**: AI agents can predict resource availability by scheme
-5. **Maintainability**: Easier to manage and extend resource collections
-
-### MCP Configuration
-
-Configure the MCP server through environment variables:
-
-```bash
-# MCP Server Configuration
-MCP_ENABLED=true                    # Enable/disable MCP server
-MCP_TRANSPORT=http                  # Transport type: stdio, http, sse (default: http for full functionality)
-MCP_PORT=3235                      # MCP server port (for HTTP/SSE)
-MCP_HOST=localhost                 # MCP server host (for HTTP/SSE)
-MCP_SERVER_NAME=your-api-name      # Server identifier for AI agents
-MCP_SERVER_VERSION=1.0.0           # Server version
-```
-
-### Transport Selection Guidelines
-
-**Use HTTP transport (default) when:**
-- Creating standard API modules (automatic implementation)
-- You need full MCP functionality (tools and resources)
-- You're using MCP Inspector or other debugging tools
-- You're building production applications
-
-**Use SSE transport only when:**
-- Explicitly requested for real-time event streaming
-- You need server-sent events functionality
-- You understand the limitations (basic connectivity only)
-
-### ✅ Enhanced Configuration: Automatic Package.json Integration
-
-**What's New:**
-- **MCP_SERVER_VERSION**: Now automatically defaults to `package.json` version
-- **MCP_SERVER_NAME**: Now automatically defaults to `package.json` name
-- **Zero Configuration**: When running via npm scripts, both values are automatically detected
-- **Fallback Support**: Graceful fallback to sensible defaults when package.json values aren't available
-
-**Automatic Detection Behavior:**
-
-1. **When running via npm scripts** (`npm start`, `npm run dev`):
-   - `MCP_SERVER_NAME` → `nestjs-template-api` (from package.json)
-   - `MCP_SERVER_VERSION` → `1.0.0` (from package.json)
-
-2. **When running built application directly** (`node dist/main.js`):
-   - `MCP_SERVER_NAME` → `mindicity-api-template` (fallback)
-   - `MCP_SERVER_VERSION` → `1.0.0` (fallback)
-
-3. **When environment variables are set**:
-   - Always uses the explicit environment variable values
-   - Overrides both package.json and fallback values
-
-### ✅ Robust Configuration Validation
-
-**Enhanced Validation Features:**
-- **Input Validation**: All MCP configuration values are validated at startup
-- **Clear Error Messages**: Detailed feedback when configuration is invalid
-- **Fail-Fast Behavior**: Application stops immediately with invalid configuration
-- **No Log Duplication**: Smart caching prevents repeated error messages
-
-**Validation Rules:**
-- `MCP_TRANSPORT`: Must be one of `stdio`, `http`, `sse` (invalid values use `stdio` default)
-- `MCP_PORT`: Must be 1-65535 (invalid values cause application startup failure)
-- `MCP_HOST`: Cannot be empty
-- `MCP_SERVER_NAME`: Cannot be empty
-- `MCP_SERVER_VERSION`: Cannot be empty
-
-**Example Validation Behavior:**
-
-```bash
-# Invalid transport (uses default with warning)
-❌ Invalid value for MCP_TRANSPORT: "https". Allowed values: [stdio, http, sse]. Using default: stdio
-🤖 MCP Server: stdio transport (name: nestjs-template-api)
-
-# Invalid port (application fails to start)
-❌ MCP Configuration validation failed: port: MCP port must be at most 65535
-🔧 Please check your environment variables and fix the configuration.
-💥 Application startup aborted due to invalid MCP configuration.
-```
-
-### Transport Types
-
-- **stdio**: Standard input/output (default) - for command-line tools
-- **http**: HTTP endpoints - for web-based AI agents
-- **sse**: Server-Sent Events - for real-time web applications
-
-### Built-in MCP Tools
-
-The MCP server provides these tools for AI agents:
-
-#### 1. `get_api_info`
-Returns comprehensive API information including configuration, ports, and Swagger URL.
-
-#### 2. `get_api_health`
-Provides real-time health status, uptime, and memory usage.
-
-#### 3. `list_api_endpoints`
-Lists all available API endpoints with methods and descriptions.
-
-### Connecting AI Agents
-
-To connect an AI agent to your API's MCP server:
-
-```json
-{
-  "mcpServers": {
-    "your-api-name": {
-      "command": "node",
-      "args": ["path/to/your/api/dist/main.js"],
-      "env": {
-        "MCP_ENABLED": "true",
-        "MCP_PORT": "3235"
-      }
-    }
-  }
-}
-```
-
-When the application starts, you'll see the MCP server information in the logs:
-
-```bash
-# Stdio transport
-🤖 MCP Server: stdio transport (name: your-api-name)
-
-# HTTP/SSE transports with URLs
-🤖 MCP Server: http transport (localhost:3235) (name: your-api-name)
-   📨 MCP Endpoint: http://localhost:3235/mcp
-
-🤖 MCP Server: sse transport (localhost:3235) (name: your-api-name)
-   📡 MCP Events: http://localhost:3235/mcp/events
-   📨 MCP Requests: http://localhost:3235/mcp
-   ℹ️  MCP Info: http://localhost:3235/mcp/info
-```
-
-### MCP Server Architecture
-
-- **Infrastructure Layer**: `src/infrastructure/mcp/`
-- **Configuration**: `src/config/mcp.config.ts`
-- **Service**: `McpServerService` handles tool registration and execution
-- **Module**: `McpModule` provides dependency injection and lifecycle management
-
-### Testing MCP Integration
-
-Use the provided test scripts:
-
-```bash
-# Test MCP server functionality
-npm run test:mcp
-
-# Test MCP configuration validation
-node scripts/test-mcp-validation.js
-```
-
-📖 **Detailed Documentation**: See [docs/mcp-integration.md](docs/mcp-integration.md) for complete MCP integration guide.
-
-## 🛠 API Endpoints
-
-### Health Check
-
-```http
-GET /mcapi/health/ping
-```
-
-**Response:**
-```json
-{
-  "status": "ok",
-  "version": "1.0.0"
-}
-```
-
-Returns application health status and version information.
-
-### Template Module (Placeholder)
-
-**Current State:** The template module is a **structural placeholder** with no active endpoints.
-
-```typescript
-// src/modules/template/template.controller.ts
-@ApiTags('template')
-@ApiBearerAuth()
-@Controller(ROUTES.TEMPLATE)  // Resolves to '/template' or '/project/template'
-export class TemplateController {
-  // No endpoints defined - ready for your implementation
-}
-```
-
-**What You Get:**
-- ✅ **Proper Controller Setup**: `@ApiTags`, `@ApiBearerAuth`, route configuration
-- ✅ **Service Integration**: ContextLoggerService and DatabaseService injected
-- ✅ **Module Configuration**: Complete NestJS module with proper imports/exports
-- ✅ **Test Coverage**: Unit tests for controller and service (100% coverage)
-- 📁 **Directory Structure**: Empty `dto/`, `interfaces/`, `entities/`, `repositories/` folders
-
-**After Bootstrap Process:**
-1. Template module gets renamed to your project module (e.g., `users`, `products`)
-2. You add your business logic, DTOs, and actual endpoints
-3. Routes automatically update based on your project configuration
-
-**Example of what you'll add:**
-```typescript
-@Get()
-@ApiOperation({ summary: 'Get all users' })
-@ApiResponse({ status: 200, type: [UserResponseDto] })
-async findAll(@Query() query: QueryUserDto): Promise<UserResponseDto[]> {
-  return this.usersService.findAll(query);
-}
-```
-
-### Documentation
-
-```http
-GET /mcapi/docs/swagger/ui     # Swagger UI
-GET /mcapi/docs/swagger/specs  # OpenAPI JSON specs
-```
-
-## 🔧 Development
-
-### Available Scripts
-
-```bash
-# Development
-npm run dev          # Start with hot reload
-npm run start        # Start production build
-
-# Building
-npm run build        # Compile TypeScript
-
-# Testing
-npm run test         # Run unit tests with coverage
-npm run test:watch   # Run tests in watch mode
-npm run test:e2e     # Run end-to-end tests
-
-# Code Quality
-npm run lint         # Run ESLint
-npm run format       # Run Prettier
-```
+### Technology Stack
+- **Framework**: NestJS with TypeScript (strict mode)
+- **Database**: PostgreSQL 13+ with PostGIS extension
+- **Testing**: Jest with fast-check for property-based testing
+- **Documentation**: OpenAPI 3.0 with Swagger UI
+- **Logging**: Structured JSON logging with correlation IDs
+- **Validation**: Zod schemas with comprehensive error handling
 
 ### Project Structure
 
 ```
 src/
-├── main.ts                 # Application bootstrap
-├── app.module.ts          # Root module
-├── config/                # Configuration management
-│   ├── app.config.ts      # Application settings with Zod validation
-│   ├── log.config.ts      # Logging configuration with Zod validation
-│   └── routes.config.ts   # API routes configuration
-├── common/                # Shared utilities
-│   ├── decorators/        # Custom decorators
-│   ├── exceptions/        # Custom exception classes with error codes
-│   ├── filters/           # Global exception filters
-│   ├── interceptors/      # Request/response interceptors
-│   ├── services/          # Shared services (ContextLoggerService)
-│   └── utils/             # Utility functions and helpers
-├── infrastructure/        # Infrastructure layer
-│   └── database/          # Database service and configuration
-└── modules/               # Feature modules
-    ├── health/            # Health check module
-    └── template/          # Template API module (to be renamed in new projects)
-        ├── dto/           # Data Transfer Objects (Zod-based)
-        ├── interfaces/    # Internal interfaces for service layer
-        └── test/          # E2E tests
+├── modules/
+│   └── buildings/           # Buildings module
+│       ├── buildings.controller.ts    # HTTP endpoints
+│       ├── buildings.service.ts       # Business logic
+│       ├── dto/                       # Request/response DTOs
+│       ├── interfaces/                # Internal interfaces
+│       └── mcp/                       # MCP integration
+├── common/                  # Shared utilities
+├── config/                  # Configuration schemas
+└── infrastructure/          # Database, logging, external services
+
+test/
+├── buildings.e2e-spec.ts   # Integration tests
+└── *.spec.ts               # Unit tests
 ```
 
-### Adding New Modules
+### Key Design Principles
 
-**IMPORTANT:** After completing the bootstrap process, follow these steps to add new modules:
+1. **Separation of Concerns**: Controllers handle HTTP, Services handle business logic
+2. **Type Safety**: Comprehensive TypeScript typing throughout
+3. **Input Validation**: Zod schemas for all inputs with descriptive error messages
+4. **Error Handling**: Graceful error handling with proper HTTP status codes
+5. **Logging**: Structured logging with correlation IDs for request tracing
+6. **Testing**: Property-based testing for universal correctness validation
 
-1. **Generate module using NestJS CLI:**
+## 🚀 Deployment
+
+### Docker Deployment
 
 ```bash
-nest generate module modules/users --no-spec
-nest generate controller modules/users --no-spec
-nest generate service modules/users --no-spec
-```
-
-2. **Create directory structure:**
-
-```bash
-mkdir -p src/modules/users/{dto,interfaces,entities,repositories,test}
-```
-
-3. **Create DTOs with Zod validation:**
-
-```typescript
-// src/modules/users/dto/create-user.dto.ts
-import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
-
-const CreateUserSchema = z.object({
-  name: z.string().min(1).max(100),
-  email: z.string().email(),
-  role: z.enum(['admin', 'user']).default('user'),
-});
-
-export class CreateUserDto extends createZodDto(CreateUserSchema) {}
-```
-
-4. **Create interfaces for service layer:**
-
-```typescript
-// src/modules/users/interfaces/user.interface.ts
-export interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'user';
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface UserQuery {
-  search?: string;
-  role?: 'admin' | 'user';
-  page?: number;
-  limit?: number;
-}
-```
-
-5. **Implement controller with Swagger documentation:**
-
-```typescript
-// src/modules/users/users.controller.ts
-@ApiTags('users')
-@ApiBearerAuth()
-@Controller(ROUTES.USERS) // Add to routes.config.ts
-export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly logger: ContextLoggerService,
-  ) {
-    this.logger.setContext(UsersController.name);
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create a new user' })
-  @ApiResponse({ status: 201, type: UserResponseDto })
-  async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
-    this.logger.trace('create()', { createUserDto });
-    return this.usersService.create(createUserDto);
-  }
-}
-```
-
-6. **Implement service with proper logging and SqlQueryBuilder:**
-
-```typescript
-// src/modules/users/users.service.ts
-import { SqlQueryBuilder } from '../../common/utils/sql-query-builder.util';
-
-@Injectable()
-export class UsersService {
-  private readonly logger: ContextLoggerService;
-
-  constructor(
-    loggerService: ContextLoggerService,
-    private readonly databaseService: DatabaseService,
-  ) {
-    this.logger = loggerService.child({ serviceContext: UsersService.name });
-    this.logger.setContext(UsersService.name);
-  }
-
-  async findAll(query: UserQuery): Promise<UserData[]> {
-    this.logger.trace('findAll()', { query });
-    
-    const correlationId = ContextUtil.getCorrelationId();
-    const userId = ContextUtil.getUserId();
-
-    try {
-      // ✅ MANDATORY: Use SqlQueryBuilder for standard queries
-      const { query: sql, params } = SqlQueryBuilder
-        .create()
-        .select(['id', 'name', 'email', 'role', 'created_at', 'updated_at'])
-        .from('users')
-        .where('status = $1', ['active'])
-        .orderBy('created_at', 'DESC')
-        .limit(query.limit ?? 20)
-        .offset(((query.page ?? 1) - 1) * (query.limit ?? 20))
-        .build();
-
-      const results = await this.databaseService.queryMany<UserData>(sql, params);
-      
-      this.logger.debug('Users retrieved for business logic', { 
-        requestedBy: userId, 
-        correlationId 
-      });
-      return results;
-    } catch (error) {
-      this.logger.error('Failed to retrieve users', { 
-        requestedBy: userId,
-        err: error, 
-        correlationId 
-      });
-      throw error;
-    }
-  }
-
-  async create(userData: UserData): Promise<UserData> {
-    this.logger.trace('create()', { userData });
-    
-    const correlationId = ContextUtil.getCorrelationId();
-    const userId = ContextUtil.getUserId();
-
-    try {
-      // ✅ MANDATORY: Use SqlQueryBuilder for INSERT operations
-      const { query: sql, params } = SqlQueryBuilder
-        .create()
-        .insert('users', ['name', 'email', 'role'])
-        .values([userData.name, userData.email, userData.role])
-        .returning(['id', 'name', 'email', 'role', 'created_at', 'updated_at'])
-        .build();
-
-      const result = await this.databaseService.queryOne<UserData>(sql, params);
-      
-      this.logger.debug('User created successfully', { userId: result.id, correlationId });
-      return result;
-    } catch (error) {
-      this.logger.error('Failed to create user', { err: error, correlationId });
-      throw error;
-    }
-  }
-}
-```
-
-## 🗃️ Database Query Guidelines
-
-### Mandatory SqlQueryBuilder Usage
-
-**CRITICAL RULE:** All simple to moderately complex database queries MUST use the `SqlQueryBuilder` utility class. Raw SQL queries are only permitted for highly complex scenarios involving CTEs, window functions, or advanced PostgreSQL features.
-
-#### When to Use SqlQueryBuilder (REQUIRED)
-
-Use `SqlQueryBuilder` for:
-- Simple SELECT, INSERT, UPDATE, DELETE operations
-- Basic JOINs (INNER, LEFT, RIGHT)
-- WHERE clauses with AND/OR conditions
-- ORDER BY, GROUP BY, HAVING clauses
-- LIMIT/OFFSET pagination
-- Basic aggregations (COUNT, SUM, AVG, etc.)
-
-#### SqlQueryBuilder Examples
-
-**Basic SELECT with filtering and pagination:**
-```typescript
-async findUsers(query: UserQuery): Promise<UserData[]> {
-  const { query: sql, params } = SqlQueryBuilder
-    .create()
-    .select(['id', 'name', 'email', 'status', 'created_at'])
-    .from('users')
-    .where('status = $1', ['active'])
-    .andWhere('created_at >= $1', [query.fromDate])
-    .orderBy('created_at', 'DESC')
-    .limit(query.limit ?? 20)
-    .offset(((query.page ?? 1) - 1) * (query.limit ?? 20))
-    .build();
-
-  return this.databaseService.queryMany<UserData>(sql, params);
-}
-```
-
-**JOIN operations:**
-```typescript
-async findUsersWithRoles(roleId: string): Promise<UserData[]> {
-  const { query: sql, params } = SqlQueryBuilder
-    .create()
-    .select(['u.id', 'u.name', 'u.email', 'r.name as role_name'])
-    .from('users u')
-    .join('INNER', 'user_roles ur', 'u.id = ur.user_id')
-    .join('INNER', 'roles r', 'ur.role_id = r.id')
-    .where('r.id = $1', [roleId])
-    .andWhere('u.status = $1', ['active'])
-    .orderBy('u.name')
-    .build();
-
-  return this.databaseService.queryMany<UserData>(sql, params);
-}
-```
-
-**INSERT operations:**
-```typescript
-async createUser(userData: CreateUserData): Promise<UserData> {
-  const { query: sql, params } = SqlQueryBuilder
-    .create()
-    .insert('users', ['name', 'email', 'role'])
-    .values([userData.name, userData.email, userData.role])
-    .returning(['id', 'name', 'email', 'role', 'created_at', 'updated_at'])
-    .build();
-
-  return this.databaseService.queryOne<UserData>(sql, params);
-}
-```
-
-#### When Raw SQL is Permitted (EXCEPTIONS ONLY)
-
-Raw SQL queries are allowed ONLY for:
-
-1. **Common Table Expressions (CTEs)**
-2. **Window Functions**
-3. **Advanced PostgreSQL Features** (arrays, JSON operations, full-text search)
-4. **Complex Recursive Queries**
-5. **Performance-Critical Queries** with database-specific optimizations
-
-#### Raw SQL Requirements
-
-**CRITICAL:** All raw SQL queries MUST include:
-
-1. **Justification Comment**: Explain why SqlQueryBuilder cannot be used
-2. **Code Review Approval**: Raw SQL requires explicit approval from senior developer
-3. **Performance Testing**: Complex queries must include performance benchmarks
-4. **Security Review**: All raw SQL must be reviewed for injection vulnerabilities
-
-**Example of acceptable raw SQL:**
-```typescript
-async getHierarchicalData(): Promise<HierarchyData[]> {
-  // ✅ JUSTIFICATION: Complex CTE with recursion requires raw SQL
-  // SqlQueryBuilder does not support recursive CTEs
-  const sql = `
-    WITH RECURSIVE category_hierarchy AS (
-      SELECT id, name, parent_id, 0 as level, ARRAY[id] as path
-      FROM categories 
-      WHERE parent_id IS NULL
-      
-      UNION ALL
-      
-      SELECT c.id, c.name, c.parent_id, ch.level + 1, ch.path || c.id
-      FROM categories c
-      INNER JOIN category_hierarchy ch ON c.parent_id = ch.id
-      WHERE NOT c.id = ANY(ch.path)
-    )
-    SELECT id, name, level, path
-    FROM category_hierarchy
-    ORDER BY path;
-  `;
-
-  return this.databaseService.queryMany<HierarchyData>(sql);
-}
-```
-
-#### Benefits of SqlQueryBuilder
-
-1. **Type Safety**: Compile-time parameter validation
-2. **SQL Injection Prevention**: Automatic parameter binding
-3. **Maintainability**: Readable, chainable API
-4. **Consistency**: Standardized query patterns across codebase
-5. **Testing**: Easier to mock and test query logic
-6. **Debugging**: Built-in query logging and parameter tracking
-
-#### Violation Examples (FORBIDDEN)
-
-```typescript
-// ❌ WRONG: Simple query using raw SQL
-async findActiveUsers(): Promise<UserData[]> {
-  const sql = 'SELECT * FROM users WHERE status = $1 ORDER BY name';
-  return this.databaseService.queryMany(sql, ['active']);
-}
-
-// ❌ WRONG: Basic JOIN using raw SQL
-async findUsersWithRoles(): Promise<UserData[]> {
-  const sql = `
-    SELECT u.*, r.name as role_name 
-    FROM users u 
-    LEFT JOIN roles r ON u.role_id = r.id 
-    WHERE u.status = $1
-  `;
-  return this.databaseService.queryMany(sql, ['active']);
-}
-```
-
-**These violations will be rejected in code review.**
-
-## 🧪 Testing
-
-The project includes comprehensive testing with Jest and maintains **97% test coverage**:
-
-### Current Test Status ✅
-
-- **Test Suites**: 29 passed, 0 failed
-- **Tests**: 431 passed, 0 failed  
-- **Coverage**: 85%+ statements, 81%+ branches, 78%+ functions, 84%+ lines
-- **Performance**: All tests complete in ~15 seconds
-
-### Test Types
-
-**Unit Tests**
-- Service logic testing with mocked dependencies
-- Controller testing with request/response validation
-- Utility function testing with edge cases
-- Exception handling and error scenarios
-
-**Property-Based Tests**
-- Configuration validation with fast-check
-- Swagger documentation structure validation
-- Request/response schema validation
-
-**Integration Tests**
-- Module integration testing
-- Database service testing with mocked connections
-- Logger service integration testing
-
-**E2E Tests**
-- Health check endpoint testing
-- Application bootstrap testing
-- Error handling and validation testing
-
-### Coverage Requirements
-
-- **Minimum**: 80% for all metrics
-- **Current**: 85%+ coverage maintained
-- **Target**: Maintain >80% coverage for new code
-
-### Running Tests
-
-```bash
-# Run all tests with coverage
-npm run test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run E2E tests only
-npm run test:e2e
-
-# Run specific test file
-npm run test -- src/modules/users/users.service.spec.ts
-```
-
-Coverage reports are generated in `coverage/` directory with HTML, LCOV, and JSON formats.
-
-## 🐳 Docker
-
-### Development
-
-```bash
-# Build image
-docker build -f Dockerfile.standalone -t nestjs-hello-api:dev .
-
-# Run container
-docker run -p 3232:3232 --env-file .env nestjs-hello-api:dev
-```
-
-### Production
-
-```bash
-# Build production image
-docker build -t nestjs-hello-api:prod .
-
-# Run with docker-compose
+# Build and run with Docker Compose
 docker-compose up -d
+
+# Check logs
+docker-compose logs -f app
 ```
 
-### Docker Compose
+### Traditional Deployment
 
-```yaml
-version: '3.8'
-services:
-  api:
-    build: .
-    ports:
-      - "3232:3232"
-    environment:
-      - APP_PORT=3232
-      - APP_LOG_LEVEL=info
-    restart: unless-stopped
+```bash
+# Build for production
+npm run build
+
+# Start production server
+npm run start:prod
 ```
 
-## 📚 Documentation
+### Environment Variables
 
-### API Documentation
+Key environment variables for deployment:
 
-- **Swagger UI**: Available at `/mcapi/docs/swagger/ui`
-- **OpenAPI Specs**: Auto-exported to `docs/api/openapi.json`
-- **Endpoint Documentation**: See `docs/api/endpoints.md`
-
-### Architecture Documentation
-
-- **Overview**: `docs/architecture/overview.md`
-- **Current State**: `docs/current-state-summary.md`
-- **Modules**: `docs/architecture/modules.md`
-- **Logging**: `docs/architecture/logging.md`
-- **Error Handling**: `docs/architecture/error-handling.md`
-
-### Design Decisions
-
-- **ADR-001**: Architecture style choice
-- **ADR-002**: Logging strategy
-- **ADR-003**: Validation approach
-
-## 🏗 Architecture
-
-### 🏗️ Core Template vs API Modules Architecture
-
-**CRITICAL SEPARATION:** The template is designed with a clear separation between core infrastructure and API modules to enable seamless template updates without conflicts.
-
-#### Core Template (Infrastructure - DO NOT MODIFY)
-
-Everything outside `src/modules/` is **CORE infrastructure** that should not be modified:
-
-```
-├── src/
-│   ├── common/                    # 🔒 CORE: Shared utilities, services, interceptors
-│   ├── config/                    # 🔒 CORE: Configuration schemas and validation
-│   ├── infrastructure/            # 🔒 CORE: Database, MCP, external services
-│   ├── app.module.ts             # 🔒 CORE: Main application module
-│   ├── main.ts                   # 🔒 CORE: Application bootstrap
-│   └── modules/                  # ✅ API MODULES: Your business logic here
-├── test/                         # 🔒 CORE: E2E test infrastructure
-├── scripts/                      # 🔒 CORE: Utility scripts
-├── docs/                         # 🔒 CORE: Template documentation
-├── .kiro/                        # 🔒 CORE: Steering documents
-└── configuration files           # 🔒 CORE: package.json, tsconfig.json, etc.
+```bash
+NODE_ENV=production
+PORT=3000
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=buildings_db
+DATABASE_USER=buildings_user
+DATABASE_PASSWORD=secure_password
+LOG_LEVEL=info
 ```
 
-#### API Modules (Your Development Area)
+See [Deployment Guide](docs/deployment/README.md) for complete configuration options.
 
-All API-specific features **MUST** be contained within `src/modules/{module-name}/`:
+## 🔒 Security
 
-```
-src/modules/{your-api-name}/
-├── {api-name}.module.ts          # ✅ YOUR MODULE: NestJS module definition
-├── {api-name}.controller.ts      # ✅ YOUR MODULE: HTTP endpoints
-├── {api-name}.service.ts         # ✅ YOUR MODULE: Business logic
-├── dto/                          # ✅ YOUR MODULE: Request/Response DTOs
-├── interfaces/                   # ✅ YOUR MODULE: Internal interfaces
-├── entities/                     # ✅ YOUR MODULE: Database entities
-└── test/                         # ✅ YOUR MODULE: E2E tests
-```
+### Security Features
+- **SQL Injection Protection**: Parameterized queries only
+- **Input Validation**: Comprehensive validation with Zod schemas
+- **Error Handling**: Secure error messages without sensitive data exposure
+- **CORS Configuration**: Configurable CORS policies
+- **Rate Limiting**: Built-in rate limiting support
 
-#### Benefits
+### Production Security Checklist
+- [ ] Use HTTPS in production
+- [ ] Configure appropriate CORS policies
+- [ ] Enable rate limiting
+- [ ] Use environment variables for secrets
+- [ ] Enable database SSL connections
+- [ ] Configure proper firewall rules
 
-- **🔄 Template Updates:** Core infrastructure can be updated without affecting your API modules
-- **🔒 Conflict Prevention:** No merge conflicts when updating template versions
-- **📦 Module Isolation:** Each API module is self-contained and portable
-- **🧪 Independent Testing:** Module tests are isolated from core infrastructure tests
+## 📊 Performance
 
-### Configuration Management
+### Optimization Features
+- **Database Indexing**: Optimized indexes for all query patterns
+- **Spatial Indexing**: PostGIS GIST indexes for spatial queries
+- **Connection Pooling**: Efficient database connection management
+- **Structured Logging**: Minimal performance impact logging
 
-The application uses a robust configuration system with Zod validation:
-
-1. **Environment Variables**: Loaded from `.env` file or system environment
-2. **Zod Schemas**: Validate and transform configuration at startup
-3. **Type Safety**: Generated TypeScript types from Zod schemas
-4. **Default Values**: Sensible defaults for all configuration options
-5. **Error Handling**: Clear validation errors for invalid configuration
-
-### Logging Strategy
-
-Structured logging with Pino:
-
-- **Correlation IDs**: Track requests across the entire application
-- **Log Levels**: `trace`, `debug`, `info`, `warn`, `error`, `alert`
-- **Structured Format**: JSON format for production, pretty print for development
-- **Performance**: High-performance logging with minimal overhead
-
-### Error Handling
-
-Comprehensive error handling system:
-
-- **Custom Exceptions**: Typed exception classes with error codes
-- **Global Filter**: Catches all exceptions and formats responses
-- **Structured Responses**: Consistent error response format
-- **Security**: Configurable error detail exposure
-
-### Validation
-
-Multi-layer validation approach:
-
-- **Environment**: Zod schemas for configuration validation
-- **Request/Response**: Zod DTOs with nestjs-zod integration
-- **Global Pipes**: Automatic validation and transformation
-- **Type Safety**: Full TypeScript support throughout
-
-## 📊 MCP Implementation Summary
-
-### ✅ Complete Multi-Transport Implementation
-
-Successfully implemented **Model Context Protocol (MCP)** server with **multiple transport options** for the Mindicity API template:
-
-#### **Three Transport Types**
-
-1. **HTTP Transport** (Default)
-   - RESTful HTTP endpoint at `POST /mcp`
-   - CORS-enabled for web clients
-   - JSON-RPC 2.0 protocol support
-   - Suitable for web-based AI agents and MCP Inspector
-
-2. **STDIO Transport**
-   - Standard input/output communication
-   - Perfect for CLI tools like Kiro
-   - Zero network configuration needed
-   - Most stable for development
-
-3. **SSE Transport** (Server-Sent Events)
-   - Real-time event streaming at `GET /mcp/events`
-   - Request endpoint at `POST /mcp`
-   - Info endpoint at `GET /mcp/info`
-   - Broadcasting to multiple connected clients
-   - Perfect for real-time web applications
-
-#### **Key Features Implemented**
-
-- ✅ **Flexible Transport Selection** - Choose the right transport for your use case
-- ✅ **Zero Breaking Changes** - HTTP is default, existing integrations work unchanged
-- ✅ **Production Ready** - Proper error handling, logging, and cleanup
-- ✅ **Type Safe** - Full TypeScript support with interfaces
-- ✅ **Comprehensive Testing** - 85%+ test coverage for core functionality
-- ✅ **Automatic Package.json Integration** - Server name and version from package.json
-- ✅ **Robust Configuration Validation** - Fail-fast with clear error messages
-- ✅ **Intelligent URL Logging** - Shows complete endpoints for HTTP/SSE transports
-
-#### **Built-in Tools**
-
-The MCP server provides these tools for AI agents:
-
-1. **`get_api_info`** - Returns comprehensive API information including configuration, ports, and Swagger URL
-2. **`get_api_health`** - Provides real-time health status, uptime, and memory usage
-3. **`list_api_endpoints`** - Lists all available API endpoints with methods and descriptions
-
-#### **Built-in Resources**
-
-MCP resources follow semantic URI schemes:
-
-- **`doc://openapi`** - Complete OpenAPI/Swagger specification
-- **`doc://readme`** - Main API documentation
-- **`schema://health`** - Health check response schemas
-- **`examples://health`** - Health endpoint examples
-
-#### **Usage Examples**
-
-**For Kiro (HTTP - Recommended):**
-```json
-{
-  "mcpServers": {
-    "my-api": {
-      "command": "node",
-      "args": ["dist/main.js"],
-      "env": {
-        "MCP_ENABLED": "true",
-        "MCP_TRANSPORT": "http",
-        "MCP_PORT": "3235"
-      }
-    }
-  }
-}
-```
-
-**For Web Clients (HTTP):**
-```javascript
-const response = await fetch('http://localhost:3235/mcapi/scope/mcp', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    jsonrpc: '2.0',
-    method: 'tools/call',
-    params: { name: 'get_api_info', arguments: {} },
-    id: 1
-  })
-});
-```
-
-**For Real-time Web Apps (SSE):**
-```javascript
-const eventSource = new EventSource('http://localhost:3235/mcapi/scope/mcp/events');
-eventSource.addEventListener('connected', (event) => {
-  console.log('Connected to MCP server:', JSON.parse(event.data));
-});
-```
-
-**Status**: ✅ **COMPLETE** - Ready for use in production
-
-## 📊 Current Project Status
-
-### ✅ What's Working Now
-
-- **Health Check API**: Fully functional at `/mcapi/health/ping`
-- **Swagger Documentation**: Complete API docs at `/mcapi/docs/swagger/ui`
-- **Test Suite**: 29 test suites, 431 tests, 85%+ coverage - all passing
-- **Build System**: TypeScript compilation, linting, formatting all working
-- **Infrastructure**: Database service, logging, error handling fully configured
-- **MCP Server**: Multi-transport MCP server with HTTP (default), STDIO, and SSE support
-- **Template Module**: Structural placeholder ready for your business logic
-- **Health Module**: Complete health monitoring with detailed status information
-
-### 🔄 What Happens After Bootstrap
-
-1. **Template Module Renamed**: `src/modules/template` → `src/modules/your-project`
-2. **Routes Updated**: `/mcapi/template` → `/mcapi/your-project/your-endpoints`
-3. **Configuration Updated**: Package name, descriptions, API scope prefix
-4. **Ready for Development**: Add your DTOs, interfaces, and business logic
-
-### 🎯 Next Steps for New Projects
-
-1. **Run Bootstrap Process**: Use Kiro or manual setup (see [Bootstrap section](#bootstrap-new-project))
-2. **Add Your Endpoints**: Replace placeholder with real business logic
-3. **Create DTOs**: Add Zod-validated request/response objects
-4. **Write Tests**: Maintain the 97% test coverage standard
-5. **Deploy**: Use provided Docker configuration
-
-### 📈 Key Metrics
-
-- **Lines of Code**: ~12,000+ (including tests and documentation)
-- **Test Coverage**: 85%+ statements, 81%+ branches
-- **Build Time**: ~10 seconds
-- **Test Execution**: ~15 seconds for full suite
-- **Dependencies**: 45 production, 89 development (all up-to-date)
-- **Modules**: 2 functional (health, template), infrastructure ready
+### Performance Monitoring
+- Response time tracking
+- Database query performance logging
+- Memory usage monitoring
+- Error rate tracking
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+### Development Setup
 
-### Code Standards
+```bash
+# Install dependencies
+npm install
 
-#### Development Requirements
+# Run tests
+npm run test
 
-- **ESLint & Prettier**: Follow all configurations and formatting rules
-- **TypeScript Strict Mode**: Explicit return types on all public methods
-- **Testing**: Write unit tests for new features (maintain >95% coverage)
-- **Documentation**: Update API docs and JSDoc for changes
-- **Commit Messages**: Use conventional commit format
+# Start development server
+npm run start:dev
 
-#### Database Query Standards
+# Lint code
+npm run lint
 
-- **MANDATORY**: Use `SqlQueryBuilder` for all simple to moderate queries
-- **FORBIDDEN**: Raw SQL for basic SELECT, INSERT, UPDATE, DELETE operations
-- **EXCEPTIONS**: Raw SQL only for CTEs, window functions, advanced PostgreSQL features
-- **REQUIRED**: All raw SQL must include justification comments
-- **REVIEW**: Raw SQL requires senior developer approval
+# Format code
+npm run format
+```
 
-#### Logging Standards
+### Code Quality Standards
+- TypeScript strict mode
+- ESLint configuration enforced
+- Comprehensive test coverage required
+- Property-based testing for critical logic
+- Structured logging throughout
 
-- **MANDATORY**: Use `ContextLoggerService` only, never `console.log`
-- **PATTERN**: Infrastructure logging in providers, business logging in services
-- **CONTEXT**: Include correlation ID and user ID in all log entries
-- **LEVELS**: Use appropriate levels (trace, debug, info, warn, error)
+## 📝 API Examples
 
-#### Security Standards
+### JavaScript/TypeScript
 
-- **NO AUTH GUARDS**: Gateway handles all authentication and rate limiting
-- **NO HARDCODED SECRETS**: Use `ConfigService` for all sensitive data
-- **PARAMETER BINDING**: Always use parameterized queries (automatic with SqlQueryBuilder)
-- **CORS & HELMET**: Security middleware already configured
+```typescript
+// Using fetch API
+const response = await fetch('/buildings?name=school&municipality_code=NYC');
+const buildings = await response.json();
+
+// Using axios
+import axios from 'axios';
+
+const buildings = await axios.get('/buildings', {
+  params: {
+    building_type: 'residential',
+    polygon: 'POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))'
+  }
+});
+```
+
+### Python
+
+```python
+import requests
+
+# Basic query
+response = requests.get('http://localhost:3000/buildings')
+buildings = response.json()
+
+# Spatial query
+params = {
+    'polygon': 'POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))',
+    'building_type': 'residential'
+}
+response = requests.get('http://localhost:3000/buildings', params=params)
+buildings = response.json()
+```
+
+### cURL
+
+```bash
+# Get all buildings
+curl -X GET "http://localhost:3000/buildings"
+
+# Spatial query with filters
+curl -X GET "http://localhost:3000/buildings?polygon=POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))&building_type=residential"
+```
+
+## 🆘 Troubleshooting
+
+### Common Issues
+
+1. **Database Connection Errors**
+   - Verify PostgreSQL is running
+   - Check database credentials in `.env`
+   - Ensure PostGIS extension is installed
+
+2. **Spatial Query Errors**
+   - Verify WKT polygon format
+   - Check coordinate system (EPSG:4326)
+   - Ensure polygon is properly closed
+
+3. **Performance Issues**
+   - Check database indexes
+   - Monitor query execution times
+   - Review connection pool settings
+
+### Getting Help
+
+- Check the [API Documentation](docs/api/buildings-api.md)
+- Review the [Deployment Guide](docs/deployment/README.md)
+- Check application logs for error details
+- Verify database connectivity and PostGIS installation
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see LICENSE file for details.
 
-## 🎯 Kiro Steering
+## 🔗 Related Projects
 
-This template includes comprehensive Kiro steering documents for automated development guidance:
-
-### Bootstrap Steering (`.kiro/steering/mindicity-api-bootstrap-steering.md`)
-
-- **Purpose**: Automated project creation from template
-- **Activation**: Only during initial project bootstrap (`inclusion: bootstrap`)
-- **Features**:
-  - Clones template repository
-  - Renames template module to project name
-  - Updates all references and configurations
-  - Installs dependencies and verifies setup
-  - Provides post-bootstrap instructions
-
-### Development Steering (`.kiro/steering/mindicity-api-base-steering.md`)
-
-- **Purpose**: Development guidance and architectural patterns
-- **Activation**: Always active during development (`inclusion: always`)
-- **Features**:
-  - Module creation step-by-step guide
-  - DTO and interface patterns
-  - Testing strategies and examples
-  - Code organization rules
-  - Logging standards with ContextLoggerService
-  - Infrastructure integration patterns
-  - Documentation requirements
-
-### Key Architectural Principles
-
-1. **Modular Architecture**: Each module is autonomous, reusable, and testable
-2. **Separation of Concerns**: Clear separation between Controllers (DTOs), Services (Interfaces), and Infrastructure (Entities)
-3. **Infrastructure Isolation**: Core components (DB, MQTT, WebSocket, Message Brokers) belong in `src/infrastructure/`
-4. **Context-Aware Logging**: Use ContextLoggerService for automatic correlation ID and user ID logging
-5. **Data Flow Pattern**: `DTO (Controller) → Interface (Service) → Entity/Raw (Infrastructure)`
-
-### Usage with Kiro
-
-When working with this template in Kiro:
-
-- **Bootstrap**: Kiro will use the bootstrap steering to create new projects
-- **Development**: Kiro will use the base steering for module creation, testing, and code organization
-- **Guidance**: Both documents provide comprehensive examples and patterns for consistent development
-
-## 🔗 Links
-
-- [NestJS Documentation](https://docs.nestjs.com)
-- [Fastify Documentation](https://fastify.dev)
-- [Pino Logger](https://getpino.io)
-- [Zod Validation](https://zod.dev)
-- [Swagger/OpenAPI](https://swagger.io/docs)
-- [Kiro IDE](https://kiro.dev)
-
----
-
-**Built with ❤️ using NestJS, Fastify, TypeScript, and Kiro Steering**
+This API is part of the Mindicity ecosystem and follows the standard architecture patterns for data enrichment services.
