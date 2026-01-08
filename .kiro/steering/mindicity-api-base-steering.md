@@ -90,6 +90,52 @@ src/modules/{your-api}/
 5. **ALWAYS** add TRACE logging at the start of every method with method name and parameters
 6. **ALWAYS** use `SqlQueryBuilder` for simple queries
 7. **NEVER** add authentication guards (gateway handles auth)
+8. **ALWAYS** add `@ApiResponse` decorations to all controller endpoints
+
+### CRITICAL: Swagger Documentation Requirements (AI Assistant Must Enforce)
+
+**EVERY CONTROLLER ENDPOINT MUST HAVE COMPLETE SWAGGER DOCUMENTATION**:
+
+```typescript
+// ✅ MANDATORY: Every endpoint must have these decorations
+@Get('endpoint')
+@ApiOperation({ summary: 'Clear description of what this endpoint does' })
+@ApiResponse({
+  status: 200,
+  description: 'Description of successful response',
+  type: ResponseDto, // or [ResponseDto] for arrays
+})
+async methodName(@Query() query: QueryDto): Promise<ResponseDto[]> {
+  // Implementation...
+}
+
+// ✅ CORRECT: For array responses
+@ApiResponse({
+  status: 200,
+  description: 'List of entities',
+  type: [EntityResponseDto],
+})
+
+// ✅ CORRECT: For single object responses
+@ApiResponse({
+  status: 200,
+  description: 'Entity details',
+  type: EntityResponseDto,
+})
+
+// ✅ CORRECT: For paginated responses
+@ApiResponse({
+  status: 200,
+  description: 'Paginated list of entities',
+  type: EntityPaginatedResponseDto,
+})
+```
+
+**AI Assistant Rules**:
+- **NEVER generate controller methods** without `@ApiResponse` decoration
+- **ALWAYS include proper response type** (single object, array, or paginated)
+- **ALWAYS import `ApiResponse`** from `@nestjs/swagger`
+- **VERIFY every endpoint** has complete Swagger documentation before completing tasks
 
 ### CRITICAL: Mandatory Method Logging (AI Assistant Must Enforce)
 
@@ -175,6 +221,11 @@ export class {ModuleName}Controller {
 
   @Get()
   @ApiOperation({ summary: 'Get all {entities}' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of {entities}',
+    type: [{Entity}ResponseDto],
+  })
   async findAll(@Query() query: Query{Entity}Dto): Promise<{Entity}ResponseDto[]> {
     this.logger.trace('findAll()', { query });
     
@@ -187,6 +238,11 @@ export class {ModuleName}Controller {
 
   @Get('paginated')
   @ApiOperation({ summary: 'Get paginated {entities}' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of {entities}',
+    type: {Entity}PaginatedResponseDto,
+  })
   async findAllPaginated(@Query() query: Query{Entity}PaginatedDto): Promise<{Entity}PaginatedResponseDto> {
     this.logger.trace('findAllPaginated()', { query });
     

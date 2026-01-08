@@ -1,5 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import { ContextLoggerService } from '../../common/services/context-logger.service';
 import { ROUTES } from '../../config/routes.config';
@@ -35,6 +35,11 @@ export class BuildingsController {
    */
   @Get('list')
   @ApiOperation({ summary: 'Get buildings with optional filtering' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of buildings matching the filter criteria',
+    type: [BuildingResponseDto],
+  })
   async findAll(@Query() query: QueryBuildingsDto): Promise<BuildingResponseDto[]> {
     this.logger.trace('findAll()', { query });
 

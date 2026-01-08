@@ -106,7 +106,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of buildings matching the filter criteria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BuildingResponseDto"
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -229,6 +239,77 @@
           "uptime",
           "memory",
           "environment"
+        ]
+      },
+      "BuildingResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "Unique building identifier",
+            "type": "string"
+          },
+          "cadastral_code": {
+            "description": "Cadastral code for land parcel identification",
+            "type": "string"
+          },
+          "municipality_code": {
+            "description": "Administrative municipality code",
+            "type": "string"
+          },
+          "name": {
+            "description": "Building name if available",
+            "type": "string"
+          },
+          "building_type": {
+            "description": "Classification category for building usage or structure type",
+            "type": "string"
+          },
+          "address": {
+            "description": "Building address",
+            "type": "string"
+          },
+          "geometry": {
+            "description": "Building geometry in GeoJSON format",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "basic_data": {
+            "description": "Additional building data in JSON format",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "visible": {
+            "description": "Visibility flag - only visible buildings are returned by default",
+            "type": "boolean"
+          },
+          "created_at": {
+            "description": "Building record creation timestamp in ISO format",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Building record last update timestamp in ISO format",
+            "type": "string"
+          },
+          "updated_by": {
+            "description": "User who last updated the building record",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "cadastral_code",
+          "municipality_code",
+          "building_type",
+          "address",
+          "basic_data",
+          "visible",
+          "created_at"
         ]
       }
     }
