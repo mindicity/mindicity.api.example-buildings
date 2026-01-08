@@ -12,12 +12,12 @@ import { CallToolResult ,
 
 import { ContextLoggerService } from '../../common/services/context-logger.service';
 import { McpConfig } from '../../config/mcp.config';
+import { ROUTES } from '../../config/routes.config';
 import { HealthService } from '../../modules/health/health.service';
 import { HealthMcpHttpTool, HealthMcpResources } from '../../modules/health/mcp';
-import { BuildingsService } from '../../modules/buildings/buildings.service';
-import { BuildingsMcpHttpTool } from '../../modules/buildings/mcp';
 
 import { McpTransport } from './transports/base-transport';
+import { HttpTransport } from './transports/http-transport';
 import { createTransportDependencies } from './transports/transport-dependencies';
 import { TransportFactory } from './transports/transport-factory';
 
@@ -78,7 +78,6 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
   private transport: McpTransport | null = null;
   private readonly mcpConfig: McpConfig;
   private healthMcpHttpTool: HealthMcpHttpTool;
-  private buildingsMcpHttpTool: BuildingsMcpHttpTool;
   // Future MCP tools can be added here:
   // private userMcpHttpTool: UserMcpHttpTool;
   // private notificationMcpHttpTool: NotificationMcpHttpTool;
@@ -86,7 +85,6 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly configService: ConfigService,
     private readonly healthService: HealthService,
-    private readonly buildingsService: BuildingsService,
     loggerService: ContextLoggerService,
   ) {
     this.logger = loggerService.child({ serviceContext: McpServerService.name });
@@ -94,8 +92,7 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
     this.mcpConfig = this.configService.get<McpConfig>('mcp')!;
     
     // Initialize MCP tools
-    this.healthMcpHttpTool = new HealthMcpHttpTool(this.healthService);
-    this.buildingsMcpHttpTool = new BuildingsMcpHttpTool(this.buildingsService);
+    this.healthMcpHttpTool = new HealthMcpHttpTool(this.healthService, loggerService);
     
     // Future MCP tools initialization:
     // this.userMcpHttpTool = new UserMcpHttpTool(this.userService);
@@ -157,8 +154,9 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
     const appConfig = this.configService.get('app');
     const dependencies = createTransportDependencies({
       healthService: this.healthService,
-      buildingsService: this.buildingsService,
+      loggerService: this.logger,
       appConfig,
+      configService: this.configService,
       // Future services can be added here without breaking existing code:
       // userService: this.userService,
       // notificationService: this.notificationService,
@@ -166,12 +164,17 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
       // databaseService: this.databaseService,
     });
 
+    // Build MCP base path using routes configuration
+    const apiPrefix = appConfig?.apiPrefix ?? '/mcapi';
+    const mcpBasePath = `${apiPrefix}/${ROUTES.MCP}`;
+
     this.transport = TransportFactory.createTransport({
       transport: this.mcpConfig.transport,
       port: this.mcpConfig.port,
       host: this.mcpConfig.host,
       serverName: this.mcpConfig.serverName,
       serverVersion: this.mcpConfig.serverVersion,
+      basePath: mcpBasePath,
     }, dependencies);
 
     // Create MCP server
@@ -193,6 +196,11 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
 
     // Connect transport to server
     await this.transport.connect(this.server);
+
+    // If using HTTP transport, set the MCP server service reference for dynamic delegation
+    if (this.mcpConfig.transport === 'http' && 'setMcpServerService' in this.transport) {
+      (this.transport as HttpTransport).setMcpServerService(this);
+    }
 
     const transportInfo = this.transport.getTransportInfo();
     this.logger.info('MCP server connected and ready for AI agent connections', {
@@ -233,12 +241,12 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
     });
 
     // Handle tool calls - dynamically route to appropriate endpoints
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, (request) => {
       const { name, arguments: args } = request.params;
       
       this.logger.trace('MCP tool called', { toolName: name, arguments: args });
 
-      return await this.handleDynamicToolCall(name, args);
+      return this.handleDynamicToolCall(name, args);
     });
 
     // List available resources - API documentation and specs
@@ -280,9 +288,6 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
     // Get tool definitions from health module (HTTP transport only)
     tools.push(...HealthMcpHttpTool.getToolDefinitions());
 
-    // Get tool definitions from buildings module (HTTP transport only)
-    tools.push(...BuildingsMcpHttpTool.getToolDefinitions());
-
     // Future modules can be added here:
     // tools.push(...UserMcpTool.getToolDefinitions());
     // tools.push(...NotificationMcpTool.getToolDefinitions());
@@ -296,19 +301,10 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
    * Routes tool calls to the correct module based on tool name patterns.
    * @private
    */
-  private async handleDynamicToolCall(toolName: string, args: unknown): Promise<CallToolResult> {
+  private handleDynamicToolCall(toolName: string, args: unknown): CallToolResult {
     // Health module tools
     if (toolName.startsWith('get_api_health')) {
       return this.healthMcpHttpTool.getApiHealth(args as Record<string, unknown>);
-    }
-    
-    // Buildings module tools
-    if (toolName === 'get_buildings_list') {
-      return await this.buildingsMcpHttpTool.get_buildings_list(args as Record<string, unknown>);
-    }
-    
-    if (toolName === 'search_buildings_geospatial') {
-      return await this.buildingsMcpHttpTool.search_buildings_geospatial(args as Record<string, unknown>);
     }
     
     // Future module tools can be added here:
@@ -368,7 +364,7 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
       
       // Health module resources (openapi specs, health docs)
       if (uri.startsWith('doc://openapi') && uri.includes('/specs')) {
-        const healthResources = new HealthMcpResources(this.configService);
+        const healthResources = new HealthMcpResources(this.configService, this.logger);
         return healthResources.handleResourceRead(uri);
       }
       
@@ -410,5 +406,56 @@ export class McpServerService implements OnModuleInit, OnModuleDestroy {
         ],
       };
     }
+  }
+
+  /**
+   * Get all available MCP tools dynamically.
+   * This method is used by HTTP transport to provide tool listings.
+   * @public
+   */
+  public getAvailableTools(): Array<{
+    name: string;
+    description: string;
+    inputSchema: {
+      type: string;
+      properties: Record<string, unknown>;
+      required: string[];
+    };
+  }> {
+    return this.generateDynamicTools();
+  }
+
+  /**
+   * Execute a tool call dynamically.
+   * This method is used by HTTP transport to execute tool calls.
+   * @public
+   */
+  public executeToolCall(toolName: string, args: unknown): CallToolResult {
+    return this.handleDynamicToolCall(toolName, args);
+  }
+
+  /**
+   * Get all available MCP resources dynamically.
+   * This method is used by HTTP transport to provide resource listings.
+   * @public
+   */
+  public getAvailableResources(): Array<{
+    uri: string;
+    name: string;
+    description: string;
+    mimeType: string;
+  }> {
+    return this.generateDynamicResources();
+  }
+
+  /**
+   * Read a resource dynamically.
+   * This method is used by HTTP transport to read resource content.
+   * @public
+   */
+  public readResource(uri: string): {
+    contents: Array<{ uri: string; mimeType: string; text?: string }>;
+  } {
+    return this.handleDynamicResourceRead(uri);
   }
 }

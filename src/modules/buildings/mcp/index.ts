@@ -1,1 +1,0 @@
-export { BuildingsMcpHttpTool } from './buildings-mcp-http.tool';

@@ -8,12 +8,11 @@ import { BuildingsService } from './buildings.service';
 
 /**
  * BuildingsModule provides building data retrieval functionality with context-aware logging.
- * Imports DatabaseModule for PostGIS query capabilities.
+ * Imports DatabaseModule for raw PostgreSQL query capabilities.
  */
 @Module({
   imports: [DatabaseModule],
   controllers: [BuildingsController],
   providers: [BuildingsService, ContextLoggerService],
-  exports: [BuildingsService],
 })
 export class BuildingsModule {}

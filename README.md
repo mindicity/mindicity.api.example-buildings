@@ -1,6 +1,6 @@
-# Mindicity Template API
+# Data Enrich API
 
-A production-ready NestJS API template for the Mindicity ecosystem, built with Fastify adapter, Pino logging, and comprehensive configuration management. This template serves as a boilerplate for creating new API projects with consistent architecture, patterns, and best practices.
+Data enrichment API for geospatial building data retrieval with PostGIS spatial capabilities. Built with NestJS, Fastify adapter, Pino logging, MCP server integration, and comprehensive configuration management for the Mindicity ecosystem.
 
 ## 🚨 MANDATORY: Bootstrap Process for New Projects
 
@@ -39,13 +39,14 @@ nest generate service modules/your-api-name --no-spec
 - **SqlQueryBuilder** for type-safe, secure database queries with automatic parameter binding
 - **Zod Validation** for environment variables and request/response schemas
 - **Swagger Documentation** with auto-generated OpenAPI specs
-- **MCP Server Integration** for AI agent connectivity with configurable tools and resources
+- **MCP Server Integration** for AI agent connectivity with HTTP, SSE, and STDIO transports
 - **Global Error Handling** with structured error responses and custom exceptions
 - **Security Middleware** including Helmet and CORS
-- **Infrastructure Isolation** with dedicated modules for DB, MQTT, WebSocket, etc.
-- **Comprehensive Testing** with unit and E2E tests (97% coverage)
+- **Infrastructure Isolation** with dedicated modules for DB, MCP, and external services
+- **Comprehensive Testing** with unit and E2E tests (85%+ coverage)
 - **Docker Support** with multi-stage builds and security best practices
 - **TypeScript Strict Mode** for type safety
+- **Health Check Module** with comprehensive health monitoring
 - **Template Module Structure** ready for customization and extension
 - **Kiro Steering Documents** for automated project bootstrap and development guidance
 
@@ -55,6 +56,7 @@ nest generate service modules/your-api-name --no-spec
 - [Quick Start](#quick-start)
 - [Bootstrap New Project](#bootstrap-new-project)
 - [Configuration](#configuration)
+- [MCP Server Integration](#-mcp-server-integration)
 - [API Endpoints](#api-endpoints)
 - [Development](#development)
 - [Database Query Guidelines](#️-database-query-guidelines)
@@ -62,6 +64,7 @@ nest generate service modules/your-api-name --no-spec
 - [Docker](#docker)
 - [Documentation](#documentation)
 - [Architecture](#architecture)
+- [Current Project Status](#-current-project-status)
 - [Kiro Steering](#kiro-steering)
 
 ## 🏃 Quick Start
@@ -93,7 +96,7 @@ The API will be available at:
 
 - **Health Check**: <http://localhost:3232/mcapi/health/ping>
 - **Swagger UI**: <http://localhost:3232/mcapi/docs/swagger/ui>
-- **Template Module**: Currently a placeholder - no active endpoints until after bootstrap
+- **Buildings Module**: Currently a placeholder - no active endpoints until implementation
 
 ### 📁 What's Included
 
@@ -119,6 +122,7 @@ src/modules/template/
 - ✅ Request/response interceptors
 - ✅ Comprehensive test coverage
 - ✅ MCP Server with HTTP/SSE/STDIO transports for AI agent connectivity
+- ✅ Health check module with detailed monitoring
 
 ## 🎯 Bootstrap New Project
 
@@ -943,10 +947,10 @@ The project includes comprehensive testing with Jest and maintains **97% test co
 
 ### Current Test Status ✅
 
-- **Test Suites**: 24 passed, 0 failed
-- **Tests**: 355 passed, 0 failed  
-- **Coverage**: 97.09% statements, 91.2% branches, 93.54% functions, 97.89% lines
-- **Performance**: All tests complete in ~11 seconds
+- **Test Suites**: 29 passed, 0 failed
+- **Tests**: 431 passed, 0 failed  
+- **Coverage**: 85%+ statements, 81%+ branches, 78%+ functions, 84%+ lines
+- **Performance**: All tests complete in ~15 seconds
 
 ### Test Types
 
@@ -974,8 +978,8 @@ The project includes comprehensive testing with Jest and maintains **97% test co
 ### Coverage Requirements
 
 - **Minimum**: 80% for all metrics
-- **Current**: 97%+ coverage maintained
-- **Target**: Maintain >95% coverage for new code
+- **Current**: 85%+ coverage maintained
+- **Target**: Maintain >80% coverage for new code
 
 ### Running Tests
 
@@ -1043,6 +1047,7 @@ services:
 ### Architecture Documentation
 
 - **Overview**: `docs/architecture/overview.md`
+- **Current State**: `docs/current-state-summary.md`
 - **Modules**: `docs/architecture/modules.md`
 - **Logging**: `docs/architecture/logging.md`
 - **Error Handling**: `docs/architecture/error-handling.md`
@@ -1145,17 +1150,17 @@ Successfully implemented **Model Context Protocol (MCP)** server with **multiple
 
 #### **Three Transport Types**
 
-1. **Stdio Transport** (Default)
-   - Standard input/output communication
-   - Perfect for CLI tools like Kiro
-   - Zero network configuration needed
-   - Most stable and recommended for development
-
-2. **HTTP Transport**
+1. **HTTP Transport** (Default)
    - RESTful HTTP endpoint at `POST /mcp`
    - CORS-enabled for web clients
    - JSON-RPC 2.0 protocol support
-   - Suitable for web-based AI agents
+   - Suitable for web-based AI agents and MCP Inspector
+
+2. **STDIO Transport**
+   - Standard input/output communication
+   - Perfect for CLI tools like Kiro
+   - Zero network configuration needed
+   - Most stable for development
 
 3. **SSE Transport** (Server-Sent Events)
    - Real-time event streaming at `GET /mcp/events`
@@ -1167,23 +1172,34 @@ Successfully implemented **Model Context Protocol (MCP)** server with **multiple
 #### **Key Features Implemented**
 
 - ✅ **Flexible Transport Selection** - Choose the right transport for your use case
-- ✅ **Zero Breaking Changes** - Stdio is default, existing integrations work unchanged
+- ✅ **Zero Breaking Changes** - HTTP is default, existing integrations work unchanged
 - ✅ **Production Ready** - Proper error handling, logging, and cleanup
 - ✅ **Type Safe** - Full TypeScript support with interfaces
-- ✅ **Comprehensive Testing** - 97%+ test coverage for core functionality
+- ✅ **Comprehensive Testing** - 85%+ test coverage for core functionality
 - ✅ **Automatic Package.json Integration** - Server name and version from package.json
 - ✅ **Robust Configuration Validation** - Fail-fast with clear error messages
 - ✅ **Intelligent URL Logging** - Shows complete endpoints for HTTP/SSE transports
 
-#### **Test Results**
+#### **Built-in Tools**
 
-- **Test Suites**: 29 passed ✅
-- **Tests**: 431 passed ✅
-- **Coverage**: 85.18% statements, 81.11% branches, 78.65% functions, 84.55% lines
+The MCP server provides these tools for AI agents:
+
+1. **`get_api_info`** - Returns comprehensive API information including configuration, ports, and Swagger URL
+2. **`get_api_health`** - Provides real-time health status, uptime, and memory usage
+3. **`list_api_endpoints`** - Lists all available API endpoints with methods and descriptions
+
+#### **Built-in Resources**
+
+MCP resources follow semantic URI schemes:
+
+- **`doc://openapi`** - Complete OpenAPI/Swagger specification
+- **`doc://readme`** - Main API documentation
+- **`schema://health`** - Health check response schemas
+- **`examples://health`** - Health endpoint examples
 
 #### **Usage Examples**
 
-**For Kiro (Stdio - Recommended):**
+**For Kiro (HTTP - Recommended):**
 ```json
 {
   "mcpServers": {
@@ -1192,7 +1208,8 @@ Successfully implemented **Model Context Protocol (MCP)** server with **multiple
       "args": ["dist/main.js"],
       "env": {
         "MCP_ENABLED": "true",
-        "MCP_TRANSPORT": "stdio"
+        "MCP_TRANSPORT": "http",
+        "MCP_PORT": "3235"
       }
     }
   }
@@ -1201,7 +1218,7 @@ Successfully implemented **Model Context Protocol (MCP)** server with **multiple
 
 **For Web Clients (HTTP):**
 ```javascript
-const response = await fetch('http://localhost:3235/mcp', {
+const response = await fetch('http://localhost:3235/mcapi/scope/mcp', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -1215,7 +1232,7 @@ const response = await fetch('http://localhost:3235/mcp', {
 
 **For Real-time Web Apps (SSE):**
 ```javascript
-const eventSource = new EventSource('http://localhost:3235/mcp/events');
+const eventSource = new EventSource('http://localhost:3235/mcapi/scope/mcp/events');
 eventSource.addEventListener('connected', (event) => {
   console.log('Connected to MCP server:', JSON.parse(event.data));
 });
@@ -1229,10 +1246,12 @@ eventSource.addEventListener('connected', (event) => {
 
 - **Health Check API**: Fully functional at `/mcapi/health/ping`
 - **Swagger Documentation**: Complete API docs at `/mcapi/docs/swagger/ui`
-- **Test Suite**: 24 test suites, 355 tests, 97% coverage - all passing
+- **Test Suite**: 29 test suites, 431 tests, 85%+ coverage - all passing
 - **Build System**: TypeScript compilation, linting, formatting all working
 - **Infrastructure**: Database service, logging, error handling fully configured
+- **MCP Server**: Multi-transport MCP server with HTTP (default), STDIO, and SSE support
 - **Template Module**: Structural placeholder ready for your business logic
+- **Health Module**: Complete health monitoring with detailed status information
 
 ### 🔄 What Happens After Bootstrap
 
@@ -1251,11 +1270,12 @@ eventSource.addEventListener('connected', (event) => {
 
 ### 📈 Key Metrics
 
-- **Lines of Code**: ~8,000+ (including tests and documentation)
-- **Test Coverage**: 97.09% statements, 91.2% branches
-- **Build Time**: ~5 seconds
-- **Test Execution**: ~11 seconds for full suite
+- **Lines of Code**: ~12,000+ (including tests and documentation)
+- **Test Coverage**: 85%+ statements, 81%+ branches
+- **Build Time**: ~10 seconds
+- **Test Execution**: ~15 seconds for full suite
 - **Dependencies**: 45 production, 89 development (all up-to-date)
+- **Modules**: 2 functional (health, template), infrastructure ready
 
 ## 🤝 Contributing
 

@@ -1,15 +1,18 @@
 import { ConfigService } from '@nestjs/config';
 
+import { ContextLoggerService } from '../../../common/services/context-logger.service';
+
 import { HealthMcpResources } from './health-mcp-resources';
 
 describe('HealthMcpResources', () => {
   let healthMcpResources: HealthMcpResources;
   let mockConfigService: jest.Mocked<ConfigService>;
+  let mockLoggerService: jest.Mocked<ContextLoggerService>;
 
   const mockAppConfig = {
     port: 3232,
     apiPrefix: '/mcapi',
-    apiScopePrefix: '/data-enrich',
+    apiScopePrefix: '/test',
     swaggerHostname: 'http://localhost:3232',
   };
 
@@ -21,7 +24,14 @@ describe('HealthMcpResources', () => {
       }),
     } as any;
 
-    healthMcpResources = new HealthMcpResources(mockConfigService);
+    mockLoggerService = {
+      child: jest.fn().mockReturnThis(),
+      setContext: jest.fn(),
+      trace: jest.fn(),
+      debug: jest.fn(),
+    } as any;
+
+    healthMcpResources = new HealthMcpResources(mockConfigService, mockLoggerService);
   });
 
   afterEach(() => {
@@ -38,13 +48,13 @@ describe('HealthMcpResources', () => {
       expect(definitions.length).toBe(1);
 
       const swaggerResource = definitions[0];
-      expect(swaggerResource.uri).toBe('doc://openapi/data-enrich/specs');
+      expect(swaggerResource.uri).toBe('doc://openapi/test/specs');
       expect(swaggerResource.name).toBe('NestJS API OpenAPI Specification');
       expect(swaggerResource.description).toContain('Complete OpenAPI 3.0 specification for NestJS API');
       expect(swaggerResource.description).toContain('Production-ready NestJS API with Fastify and Pino');
       expect(swaggerResource.description).toContain('2 available API endpoints'); // health endpoints
-      expect(swaggerResource.description).toContain('/mcapi/health/data-enrich/ping');
-      expect(swaggerResource.description).toContain('/mcapi/health/data-enrich/status');
+      expect(swaggerResource.description).toContain('/mcapi/project/health/ping');
+      expect(swaggerResource.description).toContain('/mcapi/project/health/status');
       expect(swaggerResource.mimeType).toBe('application/json');
     });
 
@@ -75,7 +85,7 @@ describe('HealthMcpResources', () => {
     it('should fallback to generic description when OpenAPI file cannot be read', () => {
       // Since the actual file exists, we need to test the fallback by temporarily moving/renaming it
       // or by testing the fallback method directly
-      const definitions = HealthMcpResources['generateFallbackResourceDefinitions']('data-enrich');
+      const definitions = HealthMcpResources['generateFallbackResourceDefinitions']('test');
 
       expect(definitions.length).toBe(1);
       expect(definitions[0].name).toBe('API OpenAPI Specification');
@@ -86,7 +96,7 @@ describe('HealthMcpResources', () => {
 
   describe('handleResourceRead', () => {
     it('should handle swagger resource URIs', () => {
-      const uri = 'doc://openapi/data-enrich/specs';
+      const uri = 'doc://openapi/test/specs';
       const result = healthMcpResources.handleResourceRead(uri);
 
       expect(result).toHaveProperty('contents');
@@ -113,7 +123,7 @@ describe('HealthMcpResources', () => {
     });
 
     it('should return OpenAPI content when file exists', () => {
-      const uri = 'doc://openapi/data-enrich/specs';
+      const uri = 'doc://openapi/test/specs';
       const result = healthMcpResources.handleResourceRead(uri);
 
       expect(result.contents).toHaveLength(1);
@@ -133,7 +143,7 @@ describe('HealthMcpResources', () => {
         get: jest.fn(() => null),
       } as any;
 
-      const healthResourcesWithoutConfig = new HealthMcpResources(configWithoutApp);
+      const healthResourcesWithoutConfig = new HealthMcpResources(configWithoutApp, mockLoggerService);
       const uri = 'doc://openapi/specs';
       const result = healthResourcesWithoutConfig.handleResourceRead(uri);
 
@@ -147,7 +157,7 @@ describe('HealthMcpResources', () => {
 
   describe('fetchHealthSwaggerResource', () => {
     it('should return OpenAPI content normally', () => {
-      const uri = 'doc://openapi/data-enrich/specs';
+      const uri = 'doc://openapi/test/specs';
       const result = healthMcpResources.handleResourceRead(uri);
 
       expect(result.contents[0].mimeType).toBe('application/json');

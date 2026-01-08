@@ -1,7 +1,7 @@
 import { Server as HttpServer } from 'http';
 
+import { ContextLoggerService } from '../../../common/services/context-logger.service';
 import { HealthService } from '../../../modules/health/health.service';
-import { BuildingsService } from '../../../modules/buildings/buildings.service';
 
 import { TransportConfig } from './base-transport';
 import { SseTransport } from './sse-transport';
@@ -17,7 +17,8 @@ describe('SseTransport', () => {
   let mockServer: jest.Mocked<HttpServer>;
   let mockMcpServer: any;
   let mockHealthService: jest.Mocked<HealthService>;
-  let mockBuildingsService: jest.Mocked<BuildingsService>;
+  let mockLoggerService: jest.Mocked<ContextLoggerService>;
+  let mockConfigService: any;
   let config: TransportConfig;
 
   beforeEach(() => {
@@ -27,6 +28,7 @@ describe('SseTransport', () => {
       host: 'localhost',
       serverName: 'test-server',
       serverVersion: '1.0.0',
+      basePath: '/mcapi/test/mcp',
     };
 
     mockHealthService = {
@@ -51,12 +53,15 @@ describe('SseTransport', () => {
       }),
     } as any;
 
-    mockBuildingsService = {
-      findAll: jest.fn(),
-      findByPolygon: jest.fn(),
-      countTotal: jest.fn(),
-      countTotalByPolygon: jest.fn(),
-      calculatePaginationMeta: jest.fn(),
+    mockLoggerService = {
+      trace: jest.fn(),
+      debug: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      fatal: jest.fn(),
+      setContext: jest.fn(),
+      child: jest.fn().mockReturnThis(),
     } as any;
 
     const mockAppConfig = {
@@ -66,10 +71,18 @@ describe('SseTransport', () => {
       port: 3232,
     };
 
+    mockConfigService = {
+      get: jest.fn((key: string) => {
+        if (key === 'app') return mockAppConfig;
+        return null;
+      }),
+    } as any;
+
     const dependencies = createTransportDependencies({
       healthService: mockHealthService,
-      buildingsService: mockBuildingsService,
+      loggerService: mockLoggerService,
       appConfig: mockAppConfig,
+      configService: mockConfigService,
     });
 
     transport = new SseTransport(config, dependencies);
@@ -168,9 +181,9 @@ describe('SseTransport', () => {
           port: config.port,
           serverName: config.serverName,
           version: config.serverVersion,
-          eventsEndpoint: `http://${config.host}:${config.port}/mcp/events`,
-          requestEndpoint: `http://${config.host}:${config.port}/mcp`,
-          infoEndpoint: `http://${config.host}:${config.port}/mcp/info`,
+          eventsEndpoint: `http://${config.host}:${config.port}${config.basePath}/events`,
+          requestEndpoint: `http://${config.host}:${config.port}${config.basePath}`,
+          infoEndpoint: `http://${config.host}:${config.port}${config.basePath}/info`,
           activeConnections: 0,
         },
       });
@@ -202,7 +215,7 @@ describe('SseTransport', () => {
 
       mockReq = {
         method: 'GET',
-        url: '/mcp/events',
+        url: `${config.basePath}/events`,
         on: jest.fn(),
       };
 
@@ -216,7 +229,7 @@ describe('SseTransport', () => {
 
     it('should handle OPTIONS requests', () => {
       mockReq.method = 'OPTIONS';
-      mockReq.url = '/mcp';
+      mockReq.url = config.basePath;
       
       requestHandler(mockReq, mockRes);
 
@@ -227,7 +240,7 @@ describe('SseTransport', () => {
 
     it('should route to SSE connection handler', () => {
       mockReq.method = 'GET';
-      mockReq.url = '/mcp/events';
+      mockReq.url = `${config.basePath}/events`;
       
       requestHandler(mockReq, mockRes);
 
@@ -238,7 +251,7 @@ describe('SseTransport', () => {
 
     it('should route to MCP request handler', () => {
       mockReq.method = 'POST';
-      mockReq.url = '/mcp';
+      mockReq.url = config.basePath;
       
       requestHandler(mockReq, mockRes);
 
@@ -248,7 +261,7 @@ describe('SseTransport', () => {
 
     it('should route to info handler', () => {
       mockReq.method = 'GET';
-      mockReq.url = '/mcp/info';
+      mockReq.url = `${config.basePath}/info`;
       
       requestHandler(mockReq, mockRes);
 
@@ -263,7 +276,14 @@ describe('SseTransport', () => {
       requestHandler(mockReq, mockRes);
 
       expect(mockRes.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'application/json' });
-      expect(mockRes.end).toHaveBeenCalledWith(JSON.stringify({ error: 'Not found' }));
+      expect(mockRes.end).toHaveBeenCalledWith(JSON.stringify({ 
+        error: 'Not found',
+        availableEndpoints: {
+          events: '/mcapi/test/mcp/events',
+          requests: '/mcapi/test/mcp',
+          info: '/mcapi/test/mcp/info'
+        }
+      }));
     });
   });
 
@@ -284,7 +304,7 @@ describe('SseTransport', () => {
 
       mockReq = {
         method: 'GET',
-        url: '/mcp/events',
+        url: `${config.basePath}/events`,
         on: jest.fn(),
       };
 
@@ -391,7 +411,7 @@ describe('SseTransport', () => {
           message: "Method 'unknown' not supported in SSE transport. Use HTTP transport for tools and resources.",
           data: {
             supportedMethods: ['initialize'],
-            recommendation: 'Use HTTP transport at the same host:port/mcp for full MCP functionality',
+            recommendation: `Use HTTP transport at the same host:port${config.basePath} for full MCP functionality`,
           },
         },
       });
@@ -415,7 +435,7 @@ describe('SseTransport', () => {
 
       mockReq = {
         method: 'POST',
-        url: '/mcp',
+        url: config.basePath,
         on: jest.fn(),
       };
 
@@ -508,7 +528,7 @@ describe('SseTransport', () => {
 
       mockReq = {
         method: 'GET',
-        url: '/mcp/info',
+        url: `${config.basePath}/info`,
         on: jest.fn(),
       };
 
@@ -549,6 +569,8 @@ describe('SseTransport', () => {
     it('should accept valid dependencies when provided', () => {
       const validDependencies = createTransportDependencies({
         healthService: mockHealthService,
+        loggerService: mockLoggerService,
+        configService: mockConfigService,
       });
       
       expect(() => {
@@ -570,7 +592,7 @@ describe('SseTransport', () => {
           message: "Method 'tools/list' not supported in SSE transport. Use HTTP transport for tools and resources.",
           data: {
             supportedMethods: ['initialize'],
-            recommendation: 'Use HTTP transport at the same host:port/mcp for full MCP functionality',
+            recommendation: `Use HTTP transport at the same host:port${config.basePath} for full MCP functionality`,
           },
         },
       });
@@ -592,7 +614,7 @@ describe('SseTransport', () => {
           message: "Method 'tools/call' not supported in SSE transport. Use HTTP transport for tools and resources.",
           data: {
             supportedMethods: ['initialize'],
-            recommendation: 'Use HTTP transport at the same host:port/mcp for full MCP functionality',
+            recommendation: `Use HTTP transport at the same host:port${config.basePath} for full MCP functionality`,
           },
         },
       });
@@ -610,7 +632,7 @@ describe('SseTransport', () => {
           message: "Method 'resources/list' not supported in SSE transport. Use HTTP transport for tools and resources.",
           data: {
             supportedMethods: ['initialize'],
-            recommendation: 'Use HTTP transport at the same host:port/mcp for full MCP functionality',
+            recommendation: `Use HTTP transport at the same host:port${config.basePath} for full MCP functionality`,
           },
         },
       });
@@ -632,7 +654,7 @@ describe('SseTransport', () => {
           message: "Method 'resources/read' not supported in SSE transport. Use HTTP transport for tools and resources.",
           data: {
             supportedMethods: ['initialize'],
-            recommendation: 'Use HTTP transport at the same host:port/mcp for full MCP functionality',
+            recommendation: `Use HTTP transport at the same host:port${config.basePath} for full MCP functionality`,
           },
         },
       });

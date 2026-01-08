@@ -1,7 +1,7 @@
 {
   "name": "api-data-enrich",
   "version": "1.0.0",
-  "description": "Buildings API for retrieving building data from PostGIS database with comprehensive filtering and geospatial capabilities",
+  "description": "Data enrichment API for geospatial building data retrieval",
   "main": "dist/main.js",
   "scripts": {
     "start": "node dist/main.js",
@@ -20,17 +20,14 @@
     "test": "npm run test:cov",
     "test:cov": "jest --coverage",
     "test:watch": "jest --watch",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e": "jest --config jest-e2e.config.js",
     "test:mcp": "node scripts/test-mcp.js",
     "prepare": "husky"
   },
   "keywords": [
     "nestjs",
-    "fastify",
-    "pino",
     "api",
-    "typescript",
-    "buildings-api",
+    "data-enrich",
     "buildings",
     "mindicity"
   ],

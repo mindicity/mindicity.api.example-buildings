@@ -32,45 +32,45 @@ describe('BuildingsController (e2e)', () => {
   // Buildings controller is currently empty (placeholder)
   // These tests verify that the routes return 404 as expected
   
-  it('/mcapi/buildings (GET) - should return 404 (no endpoints implemented)', () => {
+  it('/mcapi/project/buildings (GET) - should return 404 (no endpoints implemented)', () => {
     return request(app.getHttpServer())
-      .get('/mcapi/buildings')
+      .get('/mcapi/project/buildings')
       .expect(404);
   });
 
-  it('/mcapi/buildings/:id (GET) - should return 404 (no endpoints implemented)', () => {
+  it('/mcapi/project/buildings/:id (GET) - should return 404 (no endpoints implemented)', () => {
     return request(app.getHttpServer())
-      .get('/mcapi/buildings/test-id')
+      .get('/mcapi/project/buildings/test-id')
       .expect(404);
   });
 
-  it('/mcapi/buildings (POST) - should return 404 (no endpoints implemented)', () => {
+  it('/mcapi/project/buildings (POST) - should return 404 (no endpoints implemented)', () => {
     const createDto = {
       name: 'Test Building',
-      address: 'Test Address',
+      description: 'Test Description',
     };
 
     return request(app.getHttpServer())
-      .post('/mcapi/buildings')
+      .post('/mcapi/project/buildings')
       .send(createDto)
       .expect(404);
   });
 
-  it('/mcapi/buildings/:id (PUT) - should return 404 (no endpoints implemented)', () => {
+  it('/mcapi/project/buildings/:id (PUT) - should return 404 (no endpoints implemented)', () => {
     const updateDto = {
       name: 'Updated Building',
-      address: 'Updated Address',
+      description: 'Updated Description',
     };
 
     return request(app.getHttpServer())
-      .put('/mcapi/buildings/test-id')
+      .put('/mcapi/project/buildings/test-id')
       .send(updateDto)
       .expect(404);
   });
 
-  it('/mcapi/buildings/:id (DELETE) - should return 404 (no endpoints implemented)', () => {
+  it('/mcapi/project/buildings/:id (DELETE) - should return 404 (no endpoints implemented)', () => {
     return request(app.getHttpServer())
-      .delete('/mcapi/buildings/test-id')
+      .delete('/mcapi/project/buildings/test-id')
       .expect(404);
   });
 });

@@ -4,17 +4,40 @@ inclusion: always
 
 # Mindicity API Development Guide
 
-## 🚨 CRITICAL: Bootstrap Process Required
+## 🚨 MANDATORY: Bootstrap Process Required for ALL New APIs
 
-**MANDATORY:** All new Mindicity API projects MUST use the bootstrap process from `mindicity-api-bootstrap-steering.md`. This is not optional.
+**CRITICAL REQUIREMENT**: Every new Mindicity API project MUST start by bootstrapping from the official template repository. This is not optional.
 
-**Quick Start:**
+### Quick Start for New APIs
 
-1. Clone template repository
-2. Run bootstrap process (renames template → your API)
-3. Implement your business modules in `src/modules/`
+**STEP 1**: Clone the official template repository:
+```bash
+git clone -b master https://github.com/mindicity/mindicity.ecosystem.sdk.template-api.git temp-template
+mv temp-template/* . && mv temp-template/.* . 2>/dev/null || true
+rm -rf temp-template .git
+```
 
-**Benefits:** Production-ready foundation, consistent architecture, pre-configured infrastructure (database, logging, MCP, testing).
+**STEP 2**: Follow the complete bootstrap process from `mindicity-api-bootstrap-steering.md`
+
+**STEP 3**: Implement your business modules in `src/modules/`
+
+### Why Bootstrap is Mandatory
+
+- **Production-Ready Foundation**: Template includes pre-configured infrastructure (database, logging, MCP, testing)
+- **Consistent Architecture**: All APIs follow the same proven patterns and structure  
+- **Security & Best Practices**: Built-in security configurations and development standards
+- **Future Updates**: Template updates can be applied without breaking your API modules
+- **Team Efficiency**: Developers know exactly where to find components across all APIs
+
+### What's Included in the Template
+
+✅ **Pre-configured Infrastructure**: Database connections, logging, MCP integration, testing setup
+✅ **Security Patterns**: Authentication handling, input validation, error management
+✅ **Development Tools**: ESLint, Prettier, Jest, Docker configurations
+✅ **Documentation**: API docs, architecture guides, development workflows
+✅ **CI/CD Ready**: GitLab CI, Docker builds, deployment scripts
+
+---
 
 ## Architecture Overview
 
@@ -30,7 +53,7 @@ inclusion: always
 
 ## 🏗️ Directory Structure & Rules
 
-### Core Infrastructure (🔒 DO NOT MODIFY)
+### Core Infrastructure (🔒 NEVER MODIFY)
 
 ```text
 src/
@@ -41,7 +64,7 @@ src/
 └── main.ts          # Application bootstrap
 ```
 
-### Your Development Area (✅ MODIFY HERE)
+### Development Area (✅ MODIFY ONLY HERE)
 
 ```text
 src/modules/{your-api}/
@@ -54,7 +77,57 @@ src/modules/{your-api}/
 └── test/                    # E2E tests
 ```
 
-**Key Rule:** Keep business logic in modules, use core infrastructure services.
+**CRITICAL RULE:** Keep business logic in modules, use core infrastructure services without modification.
+
+## AI Assistant Guidelines
+
+### When Creating New Modules
+
+1. **ALWAYS** use NestJS CLI generators
+2. **NEVER** modify core infrastructure files
+3. **ALWAYS** implement MCP tools for HTTP transport (default)
+4. **ALWAYS** use `ContextLoggerService` instead of `console.log`
+5. **ALWAYS** add TRACE logging at the start of every method with method name and parameters
+6. **ALWAYS** use `SqlQueryBuilder` for simple queries
+7. **NEVER** add authentication guards (gateway handles auth)
+
+### CRITICAL: Mandatory Method Logging (AI Assistant Must Enforce)
+
+**EVERY METHOD MUST START WITH TRACE LOGGING**:
+```typescript
+// ✅ MANDATORY: Every method must have this pattern
+methodName(param1: Type1, param2: Type2): ReturnType {
+  this.logger.trace('methodName()', { param1, param2 });
+  // Method implementation...
+}
+
+// ✅ MANDATORY: Methods without parameters
+getStatus(): Status {
+  this.logger.trace('getStatus()');
+  // Method implementation...
+}
+
+// ✅ MANDATORY: Static methods (use class name)
+static getDefinitions(): Definition[] {
+  console.log('ClassName.getDefinitions()'); // Only for static methods
+  // Method implementation...
+}
+```
+
+**AI Assistant Rules**:
+- **NEVER generate methods** without trace logging at the start
+- **ALWAYS include ALL parameters** in the trace log object
+- **USE EXACT method name** in the trace log string
+- **VERIFY every method** has trace logging before completing tasks
+
+### File Naming Conventions
+
+- **Controllers:** `{module-name}.controller.ts`
+- **Services:** `{module-name}.service.ts`
+- **DTOs:** `{entity-name}.dto.ts`
+- **Interfaces:** `{entity-name}.interface.ts`
+- **MCP Tools:** `{module-name}-mcp-http.tool.ts`
+- **Tests:** `{file-name}.spec.ts` or `{file-name}.e2e-spec.ts`
 
 ## Infrastructure Extension (When Needed)
 
@@ -64,29 +137,29 @@ src/modules/{your-api}/
 - Require additional databases or message brokers
 - Must integrate with third-party APIs
 
-**Extension Process:**
+**AI Assistant Process:**
 
-1. **Justify:** Document why existing infrastructure is insufficient
+1. **Justify Extension:** Document why existing infrastructure is insufficient
 2. **Create Service:** Add to `src/infrastructure/{service-name}/`
 3. **Follow Patterns:** Use `ContextLoggerService`, Zod config, proper error handling
 4. **Module Integration:** Create NestJS module, add to `AppModule`
-5. **Testing:** Unit and integration tests required
+5. **Add Testing:** Unit and integration tests required
 
-**❌ Forbidden:** Modifying existing infrastructure services (`DatabaseService`, `McpServerService`, etc.)
+**❌ FORBIDDEN:** Modifying existing infrastructure services (`DatabaseService`, `McpServerService`, etc.)
 
 ## Implementation Patterns
 
-### Module Creation
+### Module Creation Commands
 
 ```bash
-# Generate module structure
+# Generate module structure (AI Assistant: Execute these in order)
 nest generate module modules/{module-name} --no-spec
 nest generate controller modules/{module-name} --no-spec  
 nest generate service modules/{module-name} --no-spec
 mkdir -p src/modules/{module-name}/{dto,interfaces,mcp,test}
 ```
 
-### Controller Pattern (No Auth Guards!)
+### Controller Pattern (MANDATORY Template)
 
 ```typescript
 @ApiTags('{module-name}')
@@ -111,10 +184,64 @@ export class {ModuleName}Controller {
     // Convert back to DTO for response
     return entities.map(entity => ({ ...entity }));
   }
+
+  @Get('paginated')
+  @ApiOperation({ summary: 'Get paginated {entities}' })
+  async findAllPaginated(@Query() query: Query{Entity}PaginatedDto): Promise<{Entity}PaginatedResponseDto> {
+    this.logger.trace('findAllPaginated()', { query });
+    
+    // Convert DTO to interface for service
+    const result = await this.{moduleName}Service.findAllPaginated(query);
+    
+    // Return paginated response with required structure
+    return {
+      data: result.data.map(entity => ({ ...entity })),
+      meta: result.meta,
+    };
+  }
 }
 ```
 
-### Service Pattern (Use SqlQueryBuilder)
+### Pagination Rules for AI Assistants
+
+**CRITICAL:** Do NOT implement pagination by default. Only add when explicitly requested.
+
+**Default Behavior:**
+
+- Standard `findAll()` methods return all matching records
+- No automatic pagination or limits applied
+- Simple, straightforward data retrieval
+
+**Pagination Implementation (when explicitly requested):**
+
+- Create separate paginated endpoints (e.g., `GET /entities/paginated`)
+- Use `limit` and `offset` parameters for pagination control
+- Response format MUST follow this structure:
+
+```typescript
+{
+  "data": [...],           // Array of actual data
+  "meta": {
+    "total": 53127,        // Total number of records
+    "limit": 20,           // Records per page
+    "offset": 0,           // Starting position
+    "hasNext": true,       // Whether more records exist
+    "hasPrevious": false   // Whether previous records exist
+  }
+}
+```
+
+**Pagination Parameters:**
+
+- `limit`: Number of records to return (default: 20, max: 100)
+- `offset`: Number of records to skip (default: 0)
+
+**Example Usage:**
+
+- `GET /users` → Returns all users (no pagination)
+- `GET /users/paginated?limit=20&offset=0` → Returns first 20 users with pagination metadata
+
+### Service Pattern (MANDATORY Template)
 
 ```typescript
 @Injectable()
@@ -132,21 +259,22 @@ export class {ModuleName}Service {
     this.logger.trace('findAll()', { query });
 
     try {
-      // ✅ Use SqlQueryBuilder for standard queries
+      // ✅ ALWAYS use SqlQueryBuilder for standard queries
       const { query: sql, params } = SqlQueryBuilder
         .create()
         .select(['id', 'name', 'email', 'status'])
         .from('{table_name}')
         .where('status = $1', ['active'])
         .orderBy('created_at', 'DESC')
-        .limit(query.limit ?? 20)
         .build();
 
       const results = await this.databaseService.queryMany<{Entity}Data>(sql, params);
       
-      this.logger.debug('{entities} retrieved', { 
-        count: results.length,
-        correlationId: ContextUtil.getCorrelationId()
+      // ✅ CORRECT: Log business context only
+      this.logger.debug('retrieved {entities} for business operation', {
+        requestedBy: ContextUtil.getUserId(),
+        correlationId: ContextUtil.getCorrelationId(),
+        filterCriteria: query.status
       });
       
       return results;
@@ -158,10 +286,79 @@ export class {ModuleName}Service {
       throw error;
     }
   }
+
+  async findAllPaginated(query: {Entity}PaginatedQuery): Promise<{Entity}PaginatedResponse> {
+    this.logger.trace('findAllPaginated()', { query });
+
+    try {
+      // Count total records first
+      const { query: countSql, params: countParams } = SqlQueryBuilder
+        .create()
+        .select(['COUNT(*) as total'])
+        .from('{table_name}')
+        .where('status = $1', ['active'])
+        .build();
+
+      const [{ total }] = await this.databaseService.queryMany<{ total: number }>(countSql, countParams);
+
+      // Get paginated data
+      const { query: sql, params } = SqlQueryBuilder
+        .create()
+        .select(['id', 'name', 'email', 'status'])
+        .from('{table_name}')
+        .where('status = $1', ['active'])
+        .orderBy('created_at', 'DESC')
+        .limit(query.limit)
+        .offset(query.offset)
+        .build();
+
+      const data = await this.databaseService.queryMany<{Entity}Data>(sql, params);
+      
+      // ✅ CORRECT: Log business pagination context, NOT query results
+      this.logger.debug('paginated {entities} retrieved', {
+        requestedBy: ContextUtil.getUserId(),
+        correlationId: ContextUtil.getCorrelationId(),
+        pagination: { limit: query.limit, offset: query.offset, total }
+      });
+      
+      return {
+        data,
+        meta: {
+          total,
+          limit: query.limit,
+          offset: query.offset,
+          hasNext: query.offset + query.limit < total,
+          hasPrevious: query.offset > 0,
+        },
+      };
+    } catch (error) {
+      this.logger.error('failed to retrieve paginated {entities}', { 
+        err: error, 
+        correlationId: ContextUtil.getCorrelationId()
+      });
+      throw error;
+    }
+  }
 }
 ```
 
-### DTOs vs Interfaces
+**CRITICAL Service Logging Rules**:
+
+**✅ DO Log in Services**:
+- Method entry/exit with business parameters (trace level)
+- Business logic decisions and context (debug level)
+- User actions and business events (info level)
+- Business errors and validation failures (error level)
+- Correlation IDs and user context for traceability
+
+**❌ DON'T Log in Services**:
+- Database query results (DatabaseService logs everything)
+- SQL execution details (DatabaseService handles this)
+- Row counts or query performance (DatabaseService provides this)
+- Raw database responses (already logged centrally)
+- Infrastructure operation details (handled by respective services)
+
+### DTOs vs Interfaces (MANDATORY Separation)
 
 ```typescript
 // DTOs (Controllers only) - Zod validation
@@ -171,21 +368,58 @@ const Create{Entity}Schema = z.object({
 });
 export class Create{Entity}Dto extends createZodDto(Create{Entity}Schema) {}
 
-// Interfaces (Services only)
+// Query DTOs for pagination (when explicitly requested)
+const Query{Entity}PaginatedSchema = z.object({
+  limit: z.number().int().min(1).max(100).default(20),
+  offset: z.number().int().min(0).default(0),
+  status: z.enum(['active', 'inactive']).optional(),
+});
+export class Query{Entity}PaginatedDto extends createZodDto(Query{Entity}PaginatedSchema) {}
+
+// Response DTOs for paginated data
+export interface {Entity}PaginatedResponseDto {
+  data: {Entity}ResponseDto[];
+  meta: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
+}
+
+// Interfaces (Services only) - No validation
 export interface {Entity}Data {
   id: string;
   name: string;
   email?: string;
   createdAt: Date;
 }
+
+export interface {Entity}PaginatedQuery {
+  limit: number;
+  offset: number;
+  status?: 'active' | 'inactive';
+}
+
+export interface {Entity}PaginatedResponse {
+  data: {Entity}Data[];
+  meta: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
+}
 ```
 
-## Database Queries
+## Database Query Rules
 
 ### SqlQueryBuilder (MANDATORY for Simple Queries)
 
 ```typescript
-// ✅ Use SqlQueryBuilder for standard operations
+// ✅ ALWAYS use SqlQueryBuilder for standard operations
 const { query: sql, params } = SqlQueryBuilder
   .create()
   .select(['id', 'name', 'email'])
@@ -200,7 +434,7 @@ const results = await this.databaseService.queryMany<UserData>(sql, params);
 
 ### Raw SQL (EXCEPTIONS ONLY)
 
-**Only allowed for:**
+**AI Assistant: Only use raw SQL for:**
 
 - CTEs (Common Table Expressions)
 - Window functions
@@ -222,13 +456,13 @@ const sql = `
 `;
 ```
 
-**❌ Forbidden:** Simple queries with raw SQL (use SqlQueryBuilder instead)
+**❌ FORBIDDEN:** Simple queries with raw SQL (use SqlQueryBuilder instead)
 
-## Logging Rules
+## Logging Rules (MANDATORY)
 
 **CRITICAL:** Always use `ContextLoggerService`, never `console.log`
 
-### Logger Setup
+### Logger Setup Pattern
 
 ```typescript
 constructor(loggerService: ContextLoggerService) {
@@ -236,26 +470,98 @@ constructor(loggerService: ContextLoggerService) {
 }
 ```
 
-### Logging Levels
+### Logging Levels (AI Assistant Guidelines)
 
-- **trace**: Method entry/exit with parameters
-- **debug**: Business logic steps with context
+- **trace**: Method entry/exit with parameters (business parameters only, not query results)
+- **debug**: Business logic steps with context (user actions, business decisions)
 - **error**: Exceptions with correlation ID
+
+**What NOT to Log in Services**:
+- ❌ Database query results (already logged by DatabaseService)
+- ❌ SQL execution details (already logged by DatabaseService)  
+- ❌ Row counts or query performance (already logged by DatabaseService)
+- ❌ Raw database responses (already logged by DatabaseService)
+- ❌ Infrastructure operation details (handled by respective services)
+
+**What TO Log in Services**:
+- ✅ Business method entry/exit with business parameters
+- ✅ Business logic decisions and context
+- ✅ User actions and business events
+- ✅ Business errors and validation failures
+
+### MANDATORY Method Logging Rule
+
+**CRITICAL REQUIREMENT**: Every method in every file MUST start with a TRACE log containing:
+- Method name
+- All input parameters
+
+**Pattern (MANDATORY)**:
+```typescript
+methodName(param1: Type1, param2: Type2): ReturnType {
+  this.logger.trace('methodName()', { param1, param2 });
+  
+  // Method implementation...
+}
+```
+
+**Examples**:
+```typescript
+// ✅ CORRECT: All methods must have trace logging
+async findUsers(query: UserQuery): Promise<UserData[]> {
+  this.logger.trace('findUsers()', { query });
+  // Implementation...
+}
+
+async createUser(userData: CreateUserData): Promise<UserData> {
+  this.logger.trace('createUser()', { userData });
+  // Implementation...
+}
+
+getHealthStatus(): HealthStatus {
+  this.logger.trace('getHealthStatus()');
+  // Implementation...
+}
+
+// ✅ CORRECT: Static methods use class name
+static getToolDefinitions(): ToolDefinition[] {
+  // Note: Static methods cannot use instance logger
+  // Use console.log only for static methods if absolutely necessary
+  console.log('HealthMcpHttpTool.getToolDefinitions()');
+  // Implementation...
+}
+
+// ❌ WRONG: Missing trace log
+async findUsers(query: UserQuery): Promise<UserData[]> {
+  // Missing: this.logger.trace('findUsers()', { query });
+  const results = await this.databaseService.queryMany(sql, params);
+  return results;
+}
+```
+
+**Rules**:
+- **EVERY method** must start with trace logging
+- **Include ALL parameters** in the trace log object
+- **Use method name exactly** as it appears in the function signature
+- **Static methods**: Use class name prefix (e.g., `ClassName.methodName()`)
+- **Private methods**: Follow same rule as public methods
+- **Constructors**: Log with `constructor()` and include all parameters
 
 ### Infrastructure vs Business Logging
 
 **Infrastructure providers** (Database, MQTT, WebSocket) handle their own logging centrally.
 **Business services** log only business context, NOT infrastructure performance.
 
+**CRITICAL RULE**: Never log database query results in services - DatabaseService already logs all query operations, parameters, execution time, and row counts.
+
 ```typescript
 // ✅ CORRECT: Business service logging
 async findUsers(query: UserQuery): Promise<UserData[]> {
   this.logger.trace('findUsers()', { query });
   
-  // NO logging of SQL - DatabaseService handles this
+  // NO logging of SQL or results - DatabaseService handles this completely
   const results = await this.databaseService.queryMany(sql, params);
   
-  // Log business context only
+  // Log business context only, NOT query results
   this.logger.debug('users retrieved for business logic', { 
     requestedBy: ContextUtil.getUserId(),
     correlationId: ContextUtil.getCorrelationId()
@@ -269,12 +575,20 @@ async findUsers(): Promise<UserData[]> {
   this.logger.trace('executing SQL query', { sql }); // ❌ DatabaseService logs this
   const results = await this.databaseService.queryMany(sql);
   this.logger.debug('query returned rows', { count: results.length }); // ❌ DatabaseService logs this
+  this.logger.debug('query results', { results }); // ❌ NEVER log query results - already logged by DatabaseService
 }
 ```
 
-## Code Quality & Standards
+**Why This Rule Exists**:
 
-### ESLint Rules (ENFORCED)
+- **Performance**: Prevents duplicate logging of potentially large result sets
+- **Consistency**: All database operations logged in one place with consistent format
+- **Debugging**: DatabaseService provides comprehensive query logging with timing and parameters
+- **Security**: Avoids accidental logging of sensitive data in business services
+
+## Code Quality & Standards (ENFORCED)
+
+### ESLint Rules (AI Assistant Must Follow)
 
 - **TypeScript Strict Mode**: Explicit return types, no `any`, proper typing
 - **Nullish Coalescing**: Use `??` instead of `||` for defaults
@@ -291,7 +605,7 @@ const config = userConfig ?? defaultConfig;
 const pageSize = query.limit || 10;
 ```
 
-### Security Rules
+### Security Rules (FORBIDDEN)
 
 ```typescript
 // ❌ Prohibited
@@ -322,7 +636,7 @@ async findOne(id: string): Promise<UserData | null> {
 
 **CRITICAL:** Every API module MUST implement MCP tools for AI agent connectivity.
 
-### MCP Implementation Rules
+### MCP Implementation Rules for AI Assistants
 
 #### Default: HTTP Transport
 
@@ -330,7 +644,7 @@ async findOne(id: string): Promise<UserData | null> {
 - HTTP provides complete functionality, production-ready error handling
 - One tool per endpoint/intention with clear naming
 
-#### MCP File Naming Convention
+#### MCP File Naming Convention (MANDATORY)
 
 - **Pattern**: `{api_name}-mcp-{transport}.tool.ts`
 - **Examples**:
@@ -340,9 +654,9 @@ async findOne(id: string): Promise<UserData | null> {
 - **Test Files**: `{api_name}-mcp-{transport}.tool.spec.ts`
 - **Index Export**: Update `mcp/index.ts` to export from the correctly named file
 
-#### Tool Naming Pattern
+#### Tool Naming Pattern (MANDATORY)
 
-`{action}_{module}_{entity}`
+`{action}_{module}_{entity}` (snake_case)
 
 ```typescript
 // Examples:
@@ -353,15 +667,24 @@ async findOne(id: string): Promise<UserData | null> {
 'delete_user'         // DELETE /users/:id
 ```
 
-### MCP Tool Implementation Pattern
+### MCP Tool Implementation Template
 
 ```typescript
 // MCP Tool Class with comprehensive definitions
 export class {ModuleName}McpHttpTool {
-  constructor(private readonly {moduleName}Service: {ModuleName}Service) {}
+  private readonly logger: ContextLoggerService;
 
-  // Tool method implementation
-  {toolMethod}(_args: Record<string, unknown>): CallToolResult {
+  constructor(
+    private readonly {moduleName}Service: {ModuleName}Service,
+    loggerService: ContextLoggerService,
+  ) {
+    this.logger = loggerService.child({ serviceContext: '{ModuleName}McpHttpTool' });
+  }
+
+  // Tool method implementation - MANDATORY: Start with trace logging
+  {toolMethod}(args: Record<string, unknown>): CallToolResult {
+    this.logger.trace('{toolMethod}()', { args });
+    
     const data = this.{moduleName}Service.{serviceMethod}();
     return {
       content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
@@ -381,6 +704,9 @@ export class {ModuleName}McpHttpTool {
       examples: Array<{ scenario: string; expected_result: string }>;
     };
   }> {
+    // MANDATORY: Static methods use console.log for trace logging
+    console.log('{ModuleName}McpHttpTool.getToolDefinitions()');
+    
     return [
       {
         name: '{tool_name}',
@@ -421,7 +747,7 @@ Detailed explanation including:
 }
 ```
 
-### MCP Integration Checklist
+### MCP Integration Checklist (AI Assistant Must Complete)
 
 - [ ] Add service to `TransportDependencies` interface
 - [ ] Update `createTransportDependencies` function
@@ -431,13 +757,13 @@ Detailed explanation including:
 - [ ] Add tool descriptions to `ListToolsRequestSchema`
 - [ ] Create MCP E2E tests for all tools
 
-**❌ Forbidden:** Implementing business logic directly in MCP tools (must delegate to services)
+**❌ FORBIDDEN:** Implementing business logic directly in MCP tools (must delegate to services)
 
 ## MCP Tool Definition Best Practices
 
 **CRITICAL:** Tool definitions should be comprehensive and provide detailed guidance for AI agents.
 
-### Rich Tool Definitions Structure
+### Rich Tool Definitions Template
 
 ```typescript
 // ✅ CORRECT: Comprehensive tool definition
@@ -499,7 +825,7 @@ static getToolDefinitions() {
 }
 ```
 
-### Tool Definition Requirements
+### Tool Definition Requirements (AI Assistant Must Include)
 
 - **Comprehensive Description**: Multi-line description with bullet points explaining functionality
 - **Transport Specification**: Clearly indicate which transport (HTTP/STDIO/SSE) the tool uses
@@ -507,26 +833,27 @@ static getToolDefinitions() {
 - **Practical Examples**: Real-world scenarios and expected outcomes
 - **Input Schema**: Detailed parameter definitions with validation rules
 
-## Module Creation Checklist
+## AI Assistant Module Creation Checklist
 
-**PREREQUISITE:**
+### Prerequisites (MANDATORY)
 
-- [ ] **MANDATORY:** Project created using bootstrap process (see top of document)
+- [ ] **BOOTSTRAP REQUIRED:** Project created using bootstrap process (see top of document)
 - [ ] Base API repository cloned and bootstrap steering followed
 
-**Structure:**
+### Module Structure Creation
 
 - [ ] Use NestJS CLI: `nest generate module/controller/service`
-- [ ] Create `dto/`, `interfaces/`, `test/` directories
+- [ ] Create `dto/`, `interfaces/`, `mcp/`, `test/` directories
 - [ ] Follow kebab-case naming for files
 
-**Implementation:**
+### Implementation Requirements
 
-- [ ] Controller: DTOs only, `@ApiBearerAuth()` for docs, no auth guards
-- [ ] Service: Interfaces only, child logger setup, `ContextUtil` usage
-- [ ] Module: Import infrastructure modules (DatabaseModule, etc.)
+- [ ] **Controller**: DTOs only, `@ApiBearerAuth()` for docs, NO auth guards
+- [ ] **Service**: Interfaces only, child logger setup, `ContextUtil` usage
+- [ ] **Module**: Import infrastructure modules (DatabaseModule, etc.)
+- [ ] **TRACE LOGGING**: EVERY method MUST start with `this.logger.trace('methodName()', { params })`
 
-**Infrastructure Extensions (IF NEEDED):**
+### Infrastructure Extensions (Only If Needed)
 
 - [ ] **JUSTIFY EXTENSION**: Document why existing infrastructure is insufficient
 - [ ] **NEW SERVICE CREATION**: Create in `src/infrastructure/{service-name}/`
@@ -534,7 +861,7 @@ static getToolDefinitions() {
 - [ ] **MODULE INTEGRATION**: Create NestJS module, import in AppModule
 - [ ] **TESTING**: Add unit and integration tests
 
-**MCP Integration (MANDATORY):**
+### MCP Integration (MANDATORY)
 
 - [ ] **HTTP TRANSPORT**: MCP tools MUST be implemented for HTTP (default)
 - [ ] **ONE TOOL PER ENDPOINT**: Each API endpoint needs corresponding MCP tool
@@ -544,10 +871,19 @@ static getToolDefinitions() {
 - [ ] **HANDLER REGISTRATION**: Register tools in `McpServerService` switch statement
 - [ ] **COMPREHENSIVE TESTING**: Add MCP E2E tests for all tools
 
-**Code Quality:**
+### Code Quality Requirements
 
 - [ ] ESLint rules enforced (no `console.log`, use `??` not `||`, explicit return types)
+- [ ] **TRACE LOGGING**: Every method starts with trace log containing method name and parameters
 - [ ] Use SqlQueryBuilder for simple queries, raw SQL only for complex scenarios
 - [ ] Infrastructure logs in providers only, business logs in services only
 - [ ] Unit tests >80% coverage, E2E tests for all endpoints
 - [ ] JSDoc on public methods with `@param`, `@returns`, `@throws`
+
+### Final Verification
+
+- [ ] `npm run build` succeeds
+- [ ] `npm run lint` passes
+- [ ] `npm run test` passes
+- [ ] All MCP tools working and tested
+- [ ] Documentation updated
