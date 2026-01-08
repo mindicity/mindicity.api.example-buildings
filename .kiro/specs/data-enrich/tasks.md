@@ -13,13 +13,13 @@ This implementation plan creates a NestJS-based API for building data retrieval 
   - ✅ Configure environment and verify build/test success (593 tests passed, 95.04% coverage)
   - _Requirements: 5.1, 5.2_
 
-- [ ] 2. Implement core buildings module structure
-  - [ ] 2.1 Create buildings module with NestJS CLI
+- [x] 2. Implement core buildings module structure
+  - [x] 2.1 Create buildings module with NestJS CLI
     - Generate module, controller, and service files
     - Create dto/, interfaces/, mcp/, test/ directories
     - _Requirements: 1.1, 5.5_
 
-  - [ ] 2.2 Define data models and DTOs
+  - [x] 2.2 Define data models and DTOs
     - Create QueryBuildingsDto with Zod validation for all filter parameters
     - Create BuildingResponseDto with all required fields
     - Create BuildingsQuery and BuildingData interfaces for service layer
