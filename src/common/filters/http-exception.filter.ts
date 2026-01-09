@@ -3,7 +3,9 @@ import { ConfigService } from '@nestjs/config';
 
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { PinoLogger } from 'nestjs-pino';
+import { ZodValidationException } from 'nestjs-zod';
 import { v4 as uuidv4 } from 'uuid';
+import { ZodError, ZodIssue } from 'zod';
 
 import { BaseException } from '../exceptions/base.exception';
 
@@ -136,10 +138,25 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     if (showDetail) {
-      errorResponse.detail = {
-        message: exception instanceof Error ? exception.message : 'Unknown error',
-        stack: this.parseStack(exception instanceof Error ? (exception.stack ?? '') : ''),
-      };
+      // Handle Zod validation errors specifically
+      if (exception instanceof ZodValidationException) {
+        const zodError = exception.getZodError() as ZodError;
+        errorResponse.detail = {
+          message: exception.message,
+          validationErrors: zodError.issues.map((issue: ZodIssue) => ({
+            path: issue.path.join('.'),
+            message: issue.message,
+            received: (issue as any).received,
+            expected: (issue as any).expected,
+          })),
+          stack: this.parseStack(exception.stack ?? ''),
+        };
+      } else {
+        errorResponse.detail = {
+          message: exception instanceof Error ? exception.message : 'Unknown error',
+          stack: this.parseStack(exception instanceof Error ? (exception.stack ?? '') : ''),
+        };
+      }
     }
 
     return errorResponse;

@@ -129,6 +129,112 @@
           "buildings"
         ]
       }
+    },
+    "/mcapi/data-enrich/buildings/paginated": {
+      "get": {
+        "operationId": "BuildingsController_findAllPaginated",
+        "parameters": [
+          {
+            "name": "cadastral_code",
+            "required": false,
+            "in": "query",
+            "description": "Cadastral code for exact matching",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "municipality_code",
+            "required": false,
+            "in": "query",
+            "description": "Municipality code for exact matching",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "required": false,
+            "in": "query",
+            "description": "Building name for case-insensitive partial matching",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "building_type",
+            "required": false,
+            "in": "query",
+            "description": "Building type for exact matching",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "address",
+            "required": false,
+            "in": "query",
+            "description": "Address for case-insensitive partial matching",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "polygon",
+            "required": false,
+            "in": "query",
+            "description": "WKT polygon for spatial filtering in EPSG:4326",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum number of records to return (default: 20, max: 100)",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "description": "Number of records to skip (default: 0)",
+            "schema": {
+              "minimum": 0,
+              "maximum": 9007199254740991,
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of buildings matching the filter criteria with pagination metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuildingsPaginatedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get paginated buildings with optional filtering",
+        "tags": [
+          "buildings"
+        ]
+      }
     }
   },
   "info": {
@@ -310,6 +416,59 @@
           "basic_data",
           "visible",
           "created_at"
+        ]
+      },
+      "BuildingsPaginatedResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "description": "Array of building objects matching the filter criteria",
+            "type": "array",
+            "items": {}
+          },
+          "meta": {
+            "description": "Pagination metadata with navigation information",
+            "type": "object",
+            "properties": {
+              "total": {
+                "description": "Total number of records matching the filter criteria",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "limit": {
+                "description": "Maximum number of records returned in this page",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "offset": {
+                "description": "Number of records skipped from the beginning",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "hasNext": {
+                "description": "Whether more records exist beyond the current page",
+                "type": "boolean"
+              },
+              "hasPrevious": {
+                "description": "Whether records exist before the current page",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "total",
+              "limit",
+              "offset",
+              "hasNext",
+              "hasPrevious"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "meta"
         ]
       }
     }

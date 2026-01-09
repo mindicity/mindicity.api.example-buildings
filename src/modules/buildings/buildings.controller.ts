@@ -5,7 +5,7 @@ import { ContextLoggerService } from '../../common/services/context-logger.servi
 import { ROUTES } from '../../config/routes.config';
 
 import { BuildingsService } from './buildings.service';
-import { QueryBuildingsDto, BuildingResponseDto } from './dto';
+import { QueryBuildingsDto, BuildingResponseDto, QueryBuildingsPaginatedDto, BuildingsPaginatedResponseDto } from './dto';
 
 /**
  * Controller for Buildings API endpoints.
@@ -61,5 +61,44 @@ export class BuildingsController {
       updated_at: building.updated_at?.toISOString(),
       updated_by: building.updated_by,
     }));
+  }
+
+  /**
+   * Retrieves paginated buildings based on query filters.
+   * Supports text filtering, spatial polygon filtering, and pagination with metadata.
+   * @param query - Query parameters for filtering and paginating buildings
+   * @returns Promise resolving to paginated building response with data and metadata
+   */
+  @Get('paginated')
+  @ApiOperation({ summary: 'Get paginated buildings with optional filtering' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of buildings matching the filter criteria with pagination metadata',
+    type: BuildingsPaginatedResponseDto,
+  })
+  async findAllPaginated(@Query() query: QueryBuildingsPaginatedDto): Promise<BuildingsPaginatedResponseDto> {
+    this.logger.trace('findAllPaginated()', { query });
+
+    // Convert DTO to interface for service
+    const result = await this.buildingsService.findAllPaginated(query);
+
+    // Return paginated response with required structure
+    return {
+      data: result.data.map(building => ({
+        id: building.id,
+        cadastral_code: building.cadastral_code,
+        municipality_code: building.municipality_code,
+        name: building.name,
+        building_type: building.building_type,
+        address: building.address,
+        geometry: building.geometry,
+        basic_data: building.basic_data,
+        visible: building.visible,
+        created_at: building.created_at.toISOString(),
+        updated_at: building.updated_at?.toISOString(),
+        updated_by: building.updated_by,
+      })),
+      meta: result.meta,
+    };
   }
 }
